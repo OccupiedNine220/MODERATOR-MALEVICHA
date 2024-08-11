@@ -135,4 +135,4 @@ async def clear(ctx, amount: int):
     await ctx.send(f"Удалено {amount} сообщений.", delete_after=5)
 
 # Запуск бота
-bot.run('ВАШ ТОКЕН БОТА')
+bot.run('MTI3MjAzMzQ5Njc0NzIxNjkyMA.GcHioo.rynDfMd5AqGgy93uMDP4fGmXU_m99XozazDHgw')
