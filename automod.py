@@ -166,4 +166,4 @@ async def clear(ctx, amount: int):
     await ctx.message.add_reaction("✅")
 
 # Запуск бота
-bot.run('ВАШ ТОКЕН БОТА')
+bot.run('MTI3MjAzMzQ5Njc0NzIxNjkyMA.Gkkqc2.fFRP_GoFVvo1ZYdQE1m6Ujymx0rlVuQYOH_3_E')
