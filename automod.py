@@ -11,8 +11,8 @@ with open('banwords.json', 'r', encoding='utf-8') as f:
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 # Роль админа и модератора
-ADMIN_ROLE_ID = 1264925548908642304
-MOD_ROLE_ID = 1264925741842174066
+ADMIN_ROLE_ID = 1284949456374202480
+MOD_ROLE_ID = 1284949659864928419
 
 # Проверка на наличие роли админа
 def is_admin(ctx):
