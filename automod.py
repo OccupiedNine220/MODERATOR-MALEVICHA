@@ -4,11 +4,13 @@ import json
 from datetime import datetime, timedelta
 import asyncio
 from discord.ui import Button, View, Modal, TextInput
+import discord.ui
 from discord import app_commands
 import psutil
 import time
 from datetime import datetime 
 from discord import SelectOption, Embed
+from discord import ui 
 
 # Загрузка правил из JSON файла
 with open('rules.json', 'r', encoding='utf-8') as f:
@@ -64,72 +66,121 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+class HelpView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=60)
+        
+        # Создаем Select меню
+        self.select = discord.ui.Select(
+            placeholder="Выберите категорию",
+            options=[
+                SelectOption(
+                    label="Модерация",
+                    description="Команды модерации",
+                    emoji="🛡️",
+                    value="mod"
+                ),
+                SelectOption(
+                    label="Тикеты",
+                    description="Система тикетов",
+                    emoji="🎫",
+                    value="ticket"
+                ),
+                SelectOption(
+                    label="Статистика",
+                    description="Команды статистики",
+                    emoji="📊", 
+                    value="stats"
+                ),
+                SelectOption(
+                    label="Верификация",
+                    description="Система верификации",
+                    emoji="✅",
+                    value="verify"
+                ),
+                SelectOption(
+                    label="Документы",
+                    description="Система документов",
+                    emoji="📋",
+                    value="docs"
+                ),
+                SelectOption(
+                    label="Автомодерация",
+                    description="Система автомодерации",
+                    emoji="🤖",
+                    value="automod"
+                )
+            ]
+        )
+        self.select.callback = self.select_callback
+        self.add_item(self.select)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        if self.select.values[0] == "mod":
+            embed = discord.Embed(title="🛡️ Модерация", color=discord.Color.red())
+            embed.description = """
+            🔇 `!мут <@пользователь> <время> <причина>` - Замутить пользователя
+            🔊 `!размут <@пользователь>` - Размутить пользователя
+            🔨 `!бан <@пользователь> <причина>` - Забанить пользователя
+            👢 `!кик <@пользователь> <причина>` - Кикнуть пользователя
+            🧹 `!очистить <количество>` - Удалить сообщения
+            ⚠️ `!варн <@пользователь> <причина>` - Выдать предупреждение
+            🔰  `!мод <@пользователь> <причина>` - Дать наказание по пункту правила
+            """
+            
+        elif self.select.values[0] == "ticket":
+            embed = discord.Embed(title="🎫 Система тикетов", color=discord.Color.green())
+            embed.description = """
+            📩 Используйте кнопку "Создать тикет" в специальном канале
+            ❓ При создании тикета укажите тему и описание проблемы
+            🔒 Для закрытия тикета используйте кнопку "Закрыть тикет"
+            """
+            
+        elif self.select.values[0] == "stats":
+            embed = discord.Embed(title="📊 Статистика", color=discord.Color.blue())
+            embed.description = """
+            📈 `!статистика [@пользователь]` - Показать статистику модератора
+            📊 `!ботинфо` - Показать общую статистику бота
+            """
+            
+        elif self.select.values[0] == "verify":
+            embed = discord.Embed(title="✅ Верификация", color=discord.Color.green())
+            embed.description = """
+            🤖 Верификация происходит автоматически при входе на сервер
+            🖼️ Вам будет предложено ввести код с капчи
+            🔓 После успешной верификации вы получите доступ к серверу
+            """
+            
+        elif self.select.values[0] == "docs":
+            embed = discord.Embed(title="📋 Система документов", color=discord.Color.gold())
+            embed.description = """
+            📝 Используйте кнопку "Подать документ" в специальном канале
+            👤 Укажите нарушителя и пункт правил
+            🖼️ Приложите доказательства (изображение)
+            👮 Доступно только для модераторов (роль "одмен")
+            """
+            
+        elif self.select.values[0] == "automod":
+            embed = discord.Embed(title="🤖 Автомодерация", color=discord.Color.orange())
+            embed.description = """
+            🛑 Автоматическая защита от спама
+            🖼️ Проверка изображений (расширения .jpg, .png, .gif)
+            ⏱️ Временные ограничения на отправку сообщений при спаме
+            """
+
+        await interaction.response.edit_message(embed=embed)
+
 @bot.command(name="помощь")
 async def help_command(ctx):
-    """Подробное меню помощи, разбитое на категории"""
-
-    # Модерация
-    mod_embed = discord.Embed(title="🛡️ Модерация", color=discord.Color.red())
-    mod_commands = """ 
-    🔇 `!мут <@пользователь> <время> <причина>` - Замутить пользователя 
-    🔊 `!размут <@пользователь>` - Размутить пользователя 
-    🔨 `!бан <@пользователь> <причина>` - Забанить пользователя 
-    👢 `!кик <@пользователь> <причина>` - Кикнуть пользователя 
-    🧹 `!очистить <количество>` - Удалить сообщения 
-    ⚠️ `!пред <@пользователь> <причина>` - Выдать предупреждение 
-    """ 
-    mod_embed.description = mod_commands
-    await ctx.send(embed=mod_embed)
-
-    # Тикеты
-    ticket_embed = discord.Embed(title="🎫 Система тикетов", color=discord.Color.green())
-    ticket_info = """ 
-    📩 Используйте кнопку "Создать тикет" в специальном канале 
-    ❓ При создании тикета укажите тему и описание проблемы 
-    🔒 Для закрытия тикета используйте кнопку "Закрыть тикет" 
-    """ 
-    ticket_embed.description = ticket_info
-    await ctx.send(embed=ticket_embed)
-
-    # Статистика
-    stats_embed = discord.Embed(title="📊 Статистика", color=discord.Color.blue())
-    stats_commands = """ 
-    📈 `!статистика [@пользователь]` - Показать статистику модератора 
-    📊 `!стат` - Показать общую статистику бота 
-    """ 
-    stats_embed.description = stats_commands
-    await ctx.send(embed=stats_embed)
-
-    # Верификация
-    verify_embed = discord.Embed(title="✅ Верификация", color=discord.Color.green())
-    verify_info = """ 
-    🤖 Верификация происходит автоматически при входе на сервер 
-    🖼️ Вам будет предложено ввести код с капчи 
-    🔓 После успешной верификации вы получите доступ к серверу 
-    """ 
-    verify_embed.description = verify_info
-    await ctx.send(embed=verify_embed)
-
-    # Система документов
-    doc_embed = discord.Embed(title="📋 Система документов", color=discord.Color.gold())
-    doc_info = """ 
-    📝 Используйте кнопку "Подать документ" в специальном канале 
-    👤 Укажите нарушителя и пункт правил 
-    🖼️ Приложите доказательства (изображение) 
-    👮 Доступно только для модераторов (роль "одмен") 
-    """ 
-    doc_embed.description = doc_info
-    await ctx.send(embed=doc_embed)
-
-    # Автомодерация
-    automod_embed = discord.Embed(title="🤖 Автомодерация", color=discord.Color.orange())
-    automod_info = """ 
-    🛑 Автоматическая защита от спама 
-    🖼️ Проверка изображений (расширения .jpg, .png, .gif) 
-    ⏱️ Временные ограничения на отправку сообщений при спаме 
-    """ 
-    automod_embed.description = automod_info
-    await ctx.send(embed=automod_embed)
+    """Интерактивное меню помощи"""
+    embed = discord.Embed(
+        title="📚 Система помощи",
+        description="Выберите категорию в меню ниже для получения подробной информации",
+        color=discord.Color.blue()
+    )
+    
+    view = HelpView()
+    await ctx.send(embed=embed, view=view)
 
 # Команда мут
 @bot.command(name="мут")
@@ -595,92 +646,95 @@ async def on_message(message):
     await bot.process_commands(message)
 
 # Система тикетов
+# Система тикетов
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="Создать тикет", style=discord.ButtonStyle.green, custom_id="create_ticket")
     async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(TicketModal())
+        # Проверяем, есть ли у пользователя уже открытый тикет
+        existing_ticket = discord.utils.get(interaction.guild.channels, 
+                                          name=f"ticket-{interaction.user.name.lower()}")
+        if existing_ticket:
+            await interaction.response.send_message(
+                "У вас уже есть открытый тикет!", ephemeral=True)
+            return
 
-class TicketModal(discord.ui.Modal):
-    def __init__(self):
-        super().__init__(title="Создание тикета")
-        self.topic = discord.ui.TextInput(
-            label="Тема тикета",
-            placeholder="Кратко опишите тему вашего обращения",
-            min_length=5,
-            max_length=100,
-            required=True,
-        )
-        self.description = discord.ui.TextInput(
-            label="Описание",
-            placeholder="Подробно опишите вашу проблему или вопрос",
-            style=discord.TextStyle.paragraph,
-            min_length=10,
-            max_length=1000,
-            required=True,
-        )
-        self.add_item(self.topic)
-        self.add_item(self.description)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        guild = interaction.guild
-        member = interaction.user
-        admin_role = discord.utils.get(guild.roles, name="одмен")
-
-        category = guild.get_channel(1301121896758382612)
+        # Создаем категорию для тикетов, если её нет
+        category = discord.utils.get(interaction.guild.categories, name="Тикеты")
         if not category:
-            return await interaction.response.send_message("Ошибка: категория для тикетов не найдена", ephemeral=True)
+            category = await interaction.guild.create_category("Тикеты")
 
+        # Настройка прав доступа
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            member: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            admin_role: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            interaction.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            interaction.guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
         }
 
-        channel = await guild.create_text_channel(
-            f"ticket-{member.name}",
-            overwrites=overwrites,
-            category=category
+        # Добавляем права для роли модератора
+        mod_role = discord.utils.get(interaction.guild.roles, name="одмен")
+        if mod_role:
+            overwrites[mod_role] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+
+        # Создаем канал тикета
+        channel = await interaction.guild.create_text_channel(
+            f"ticket-{interaction.user.name.lower()}",
+            category=category,
+            overwrites=overwrites
         )
 
-        embed = discord.Embed(title=f"Новый тикет от {member.name}", color=discord.Color.green())
-        embed.add_field(name="Тема", value=self.topic.value, inline=False)
-        embed.add_field(name="Описание", value=self.description.value, inline=False)
+        # Создаем эмбед для тикета
+        embed = discord.Embed(
+            title="Тикет создан",
+            description=f"Тикет создан пользователем {interaction.user.mention}",
+            color=discord.Color.green()
+        )
+        embed.add_field(name="Статус", value="🟢 Открыт", inline=False)
+        
+        # Создаем view с кнопками управления тикетом
+        class TicketActionsView(discord.ui.View):
+            def __init__(self):
+                super().__init__(timeout=None)
 
-        await channel.send(embed=embed)
-        await channel.send(f"Тикет создан пользователем {member.mention}", view=TicketActionsView())
+            @discord.ui.button(label="Закрыть тикет", style=discord.ButtonStyle.red, custom_id="close_ticket")
+            async def close_ticket(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user == interaction.user or any(role.name == "одмен" for role in button_interaction.user.roles):
+                    await button_interaction.response.send_message("Тикет будет закрыт через 5 секунд...")
+                    await asyncio.sleep(5)
+                    await channel.delete()
+                else:
+                    await button_interaction.response.send_message(
+                        "Только создатель тикета или модератор может закрыть тикет!", 
+                        ephemeral=True
+                    )
 
+        await channel.send(embed=embed, view=TicketActionsView())
         await interaction.response.send_message(
-            f"Тикет создан в канале {channel.mention}", ephemeral=True
-        )
-
-class TicketActionsView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="Закрыть тикет", style=discord.ButtonStyle.red, custom_id="close_ticket")
-    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Тикет будет закрыт через 5 секунд...", ephemeral=True)
-        await asyncio.sleep(5)
-        await interaction.channel.delete()
+            f"Ваш тикет создан: {channel.mention}", ephemeral=True)
 
 @bot.event
 async def on_ready():
-    channel = bot.get_channel(1301124585483403264)
+    # Находим канал для создания тикетов
+    channel = bot.get_channel(1301124585483403264)  # Замените на ID вашего канала
     if channel:
-        await channel.purge()
-        
+        # Проверяем, нет ли уже сообщения с кнопкой создания тикета
+        async for message in channel.history(limit=100):
+            if message.author == bot.user and message.embeds:
+                return
+
+        # Если сообщения нет, создаем новое
         embed = discord.Embed(
             title="Система тикетов",
             description="Нажмите на кнопку ниже, чтобы создать тикет",
             color=discord.Color.blue()
         )
         await channel.send(embed=embed, view=TicketView())
-    
+
+    # Регистрируем view для обработки кнопок
     bot.add_view(TicketView())
+
 # Удаляем команду setup_tickets, так как теперь сообщение создается автоматически при запуске бота
 # Система статистики и отчетов
 class ModStats:
@@ -804,24 +858,40 @@ async def on_message(message):
                 # Здесь можно добавить проверку изображения через API для определения неприемлемого контента
                 pass
 
+
+BOT_VERSION = 1.5
+
+start_time = time.time()
+
+# Глобальные счетчики
+deleted_messages = 0
+bans = 0
+mutes = 0
+edited_messages = 0
+
+# Остальной код остается без изменений
+
 @bot.command(name="стат")
 async def stats(ctx):
     global deleted_messages, bans, mutes, edited_messages, start_time, BOT_VERSION
     current_time = time.time()
     uptime = timedelta(seconds=int(current_time - start_time))
     cpu_usage = psutil.cpu_percent()
+    ram_usage = round(psutil.virtual_memory().percent)
 
-    stat_message = f"""
-    **Статистика бота**:
-    Удаленные сообщения: {deleted_messages}
-    Баны: {bans}
-    Муты: {mutes}
-    Отредактированные сообщения: {edited_messages}
-    Нагрузка на ЦП: {cpu_usage}%
-    Время с запуска: {uptime}
-    Версия бота: {BOT_VERSION}
-    """
-    await ctx.send(stat_message)
+    # Создание эмбеда
+    embed = discord.Embed(title="📊 Статистика бота", color=discord.Color.blue())
+    embed.add_field(name="Удаленные сообщения", value=deleted_messages, inline=False)
+    embed.add_field(name="Баны", value=bans, inline=False)
+    embed.add_field(name="Муты", value=mutes, inline=False)
+    embed.add_field(name="Отредактированные сообщения", value=edited_messages, inline=False)
+    embed.add_field(name="Нагрузка на ЦП", value=f"{cpu_usage}%", inline=False)
+    embed.add_field(name="Нагрузка на ОЗУ", value=f"{ram_usage}%", inline=False)
+    embed.add_field(name="Время с запуска", value=str(uptime), inline=False)
+    embed.add_field(name="Версия бота", value=BOT_VERSION, inline=False)
+
+    # Отправка эмбеда
+    await ctx.send(embed=embed)
 
 class DocModal(discord.ui.Modal):
     def __init__(self):
@@ -990,5 +1060,274 @@ async def backup(ctx):
     save_backup(server_data, "server_backup")
     await ctx.send("Бэкап сервера создан успешно!")
 
+CHANNEL_ID = 1301579000992366652  # ID канала, где должна работать команда
+
+
+class ModelSubmissionModal(ui.Modal, title='Отправка 3D модели'):
+    model_name = ui.TextInput(label='Название модели', placeholder='Введите название модели')
+    
+    def __init__(self):
+        super().__init__()
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message(f"Модель '{self.model_name.value}' получена! Пожалуйста, отправьте файлы в следующем сообщении.", ephemeral=True)
+        
+        def check(m):
+            return m.author.id == interaction.user.id and m.channel.id == interaction.channel.id and m.attachments
+        
+        try:
+            message = await bot.wait_for('message', timeout=300.0, check=check)
+        except asyncio.TimeoutError:
+            await interaction.followup.send("Время ожидания файлов истекло.", ephemeral=True)
+        else:
+            attachments = message.attachments
+            valid_files = [att for att in attachments if att.filename.endswith(('.png', '.jpg', '.jpeg', '.blend', '.glb'))]
+            
+            if len(valid_files) < 4:
+                await interaction.followup.send("Пожалуйста, убедитесь, что вы отправили 2 скриншота, .blend и .glb файлы.", ephemeral=True)
+            else:
+                await interaction.followup.send("Спасибо! Ваша модель и файлы успешно получены.", ephemeral=True)
+                # Здесь можно добавить код для сохранения файлов или отправки их куда-либо
+
+class SubmitModelView(ui.View):
+    def __init__(self):
+        super().__init__()
+        self.add_item(ui.Button(label="Отправить 3D модель", style=discord.ButtonStyle.primary, custom_id="submit_model"))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.data["custom_id"] == "submit_model":
+            await interaction.response.send_modal(ModelSubmissionModal())
+        return True
+
+@bot.tree.command(name="3d_happiness", description="Отправить 3D модель")
+async def three_d_happiness(interaction: discord.Interaction):
+    if interaction.channel_id != CHANNEL_ID:
+        await interaction.response.send_message("Эта команда может быть использована только в специальном канале.", ephemeral=True)
+        return
+
+    view = SubmitModelView()
+    await interaction.response.send_message("Нажмите кнопку ниже, чтобы отправить 3D модель:", view=view)
+
+@bot.command(name="мод")
+@commands.has_permissions(kick_members=True)
+async def mod_action(ctx, member: discord.Member, rule_id: str):
+    if not is_mod(ctx):
+        await ctx.send("У вас нет прав для выполнения этой команды.")
+        return
+
+    # Получаем правило из существующего файла правил
+    rule = rules['rules'].get(rule_id)
+    if rule is None:
+        await ctx.send(f"Правило с идентификатором '{rule_id}' не найдено.")
+        return
+
+    # Создаем эмбед
+    embed = discord.Embed(title="Модерационное действие", color=discord.Color.red())
+    embed.add_field(name="Модератор", value=ctx.author.mention, inline=False)
+    embed.add_field(name="Нарушитель", value=member.mention, inline=False)
+    embed.add_field(name="Наказание", value=rule['punishment']['type'], inline=True)
+    embed.add_field(name="Правило", value=f"{rule_id}: {rule['description']}", inline=True)
+    embed.timestamp = datetime.now()
+
+    await ctx.send(embed=embed)
+    await ctx.message.add_reaction("✅")
+
+@bot.command(name="рейтинг")
+async def rating(ctx):
+    # Создаем словарь для хранения количества сообщений пользователей
+    user_messages = {}
+    async for message in ctx.channel.history(limit=1000):
+        if not message.author.bot:
+            user_id = message.author.id
+            user_messages[user_id] = user_messages.get(user_id, 0) + 1
+    
+    # Сортируем пользователей по количеству сообщений
+    sorted_users = sorted(user_messages.items(), key=lambda x: x[1], reverse=True)
+    
+    embed = discord.Embed(title="Рейтинг активности", color=discord.Color.gold())
+    for i, (user_id, messages) in enumerate(sorted_users[:10], 1):
+        user = ctx.guild.get_member(user_id)
+        if user:
+            embed.add_field(name=f"#{i} {user.name}", value=f"Сообщений: {messages}", inline=False)
+    
+    await ctx.send(embed=embed)
+
+@bot.command(name="опрос")
+async def poll(ctx, question, *options):
+    if len(options) > 10:
+        await ctx.send("Максимальное количество вариантов - 10")
+        return
+
+    reactions = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+    description = []
+    for i, option in enumerate(options):
+        description.append(f"{reactions[i]} {option}")
+
+    embed = discord.Embed(title=question, description="\n".join(description))
+    poll_msg = await ctx.send(embed=embed)
+
+    for i in range(len(options)):
+        await poll_msg.add_reaction(reactions[i])
+
+@bot.command(name="напомни")
+async def remind(ctx, time: int, *, message):
+    await ctx.send(f"Хорошо, я напомню вам через {time} минут: {message}")
+    await asyncio.sleep(time * 60)
+    await ctx.author.send(f"Напоминание: {message}")
+
+import re
+
+import re
+
+# Добавьте список запрещенных слов и ссылок
+BANNED_RICKROLL_LINKS = [
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",  # Ссылка на рикролл
+    "http://www.youtube.com/watch?v=dQw4w9WgXcQ",  # Ссылка на рикролл
+    "rickroll",  # Ключевое слово
+]
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Проверка на рикролл
+    if any(link in message.content.lower() for link in BANNED_RICKROLL_LINKS):
+        await message.delete()  # Удаляем сообщение
+        mute_role = discord.utils.get(message.guild.roles, name="Muted")  # Роль для мута
+        await message.author.add_roles(mute_role)  # Замучиваем пользователя
+        await message.channel.send(f"{message.author.mention}, ваше сообщение было удалено за использование рикролла. Вы замучены на 1 час.")
+        await asyncio.sleep(3600)  # Мут на 1 час
+        await message.author.remove_roles(mute_role)  # Снимаем мут
+        return
+
+    await bot.process_commands(message)  # Обрабатываем другие команды
+
+
+@bot.command(name="рандом")
+async def random_number(ctx, min: int = 1, max: int = 100):
+    """Генерирует случайное число в заданном диапазоне."""
+    if min > max:
+        await ctx.send("Минимальное значение не может быть больше максимального.")
+        return
+
+    number = random.randint(min, max)
+    await ctx.send(f"Случайное число между {min} и {max}: {number}")
+
+
+@bot.command(name="добавить_банворд")
+@commands.has_permissions(manage_messages=True)
+async def add_banword(ctx, *, word: str):
+    if word in banwords['tier1'] or word in banwords['tier2']:
+        await ctx.send("Это слово уже в списке запрещенных.")
+        return
+
+    banwords['tier1'].append(word)  # Или 'tier2' в зависимости от вашей логики
+    with open('banwords.json', 'w', encoding='utf-8') as f:
+        json.dump(banwords, f, ensure_ascii=False, indent=4)
+
+    await ctx.send(f"Слово '{word}' добавлено в список запрещенных.")
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    # Проверка на банворды первой очереди
+    for word in banwords['tier1']:
+        if word in message.content.lower():
+            await message.delete()
+            mute_role = discord.utils.get(message.guild.roles, name="Muted")
+            await message.author.add_roles(mute_role)
+            await message.channel.send(f"Сообщение от {message.author.mention} было удалено за использование запрещенного слова '{word}'. Пользователь замучен на 2 часа.")
+            await asyncio.sleep(7200)  # Мут на 2 часа
+            await message.author.remove_roles(mute_role)
+            return
+
+    # Проверка на банворды второй очереди
+    for word in banwords['tier2']:
+        if word in message.content.lower():
+            await message.delete()
+            await message.channel.send(f"Сообщение от {message.author.mention} было удалено за использование запрещенного слова '{word}'.")
+            return
+
+    await bot.process_commands(message)
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    # Приводим сообщение к нижнему регистру для проверки
+    message_content = message.content.lower()
+
+    # Проверка на банворды первой очереди
+    for word in banwords['tier1']:
+        if word in message_content:
+            await message.delete()  # Удаляем сообщение
+            mute_role = discord.utils.get(message.guild.roles, name="Muted")  # Роль для мута
+            if mute_role:
+                await message.author.add_roles(mute_role)  # Замучиваем пользователя
+                await message.channel.send(f"{message.author.mention}, ваше сообщение было удалено за использование запрещенного слова '{word}'. Вы замучены на 2 часа.")
+                await asyncio.sleep(7200)  # Мут на 2 часа
+                await message.author.remove_roles(mute_role)  # Снимаем мут
+            return  # Выходим из функции после удаления сообщения
+
+    # Обработка других команд
+    await bot.process_commands(message)
+
+@bot.command(name='ботинфо')
+async def bot_info(ctx):
+    current_time = time.time()
+    uptime = current_time - start_time
+    days, remainder = divmod(int(uptime), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    embed = discord.Embed(
+        title="🤖 Информация о боте",
+        color=discord.Color.blue()
+    )
+
+    embed.add_field(
+        name="📊 Статистика",
+        value=f"**Серверов:** {len(bot.guilds)}\n"
+              f"**Пользователей:** {len(set(bot.users))}\n"
+              f"**Пинг:** {round(bot.latency * 1000)}мс\n"
+              f"Версия бота: {BOT_VERSION}",
+        inline=False
+    )
+
+    embed.add_field(
+        name="💻 Система",
+        value=f"**ОС:** {platform.system()} {platform.release()}\n"
+              f"**Python:** {platform.python_version()}\n"
+              f"**discord.py:** {discord.__version__}",
+        inline=False
+    )
+
+    embed.add_field(
+        name="⏰ Аптайм",
+        value=f"**{days}** д. **{hours}** ч. **{minutes}** мин. **{seconds}** сек.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="🖥️ Ресурсы",
+        value=f"**CPU:** {psutil.cpu_percent()}%\n"
+              f"**RAM:** {psutil.virtual_memory().percent}%",
+        inline=False
+    )
+
+    embed.set_footer(
+        text=f"ID Бота: {bot.user.id}",
+        icon_url=bot.user.avatar.url
+    )
+
+    await ctx.send(embed=embed)
+
+import platform
+
+
 # Запуск бота
-bot.run('MTI3MjAzMzQ5Njc0NzIxNjkyMA.G_7Xur.Xv0DFLyVVyzfXuUf3CMxEwQ6VrpSnqXEiu2nFw')
+bot.run('MTI3MjAzMzQ5Njc0NzIxNjkyMA.GlqNbY.ab1W1VT2Yto_Lpoy7O8GvYHHdqSfzqZu1PTGAk')
