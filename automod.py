@@ -66,11 +66,11 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60)
-        
-        # Создаем Select меню
+
         self.select = discord.ui.Select(
             placeholder="Выберите категорию",
             options=[
@@ -89,7 +89,7 @@ class HelpView(discord.ui.View):
                 SelectOption(
                     label="Статистика",
                     description="Команды статистики",
-                    emoji="📊", 
+                    emoji="📊",
                     value="stats"
                 ),
                 SelectOption(
@@ -109,6 +109,30 @@ class HelpView(discord.ui.View):
                     description="Система автомодерации",
                     emoji="🤖",
                     value="automod"
+                ),
+                SelectOption(
+                    label="Утилиты",
+                    description="Полезные команды",
+                    emoji="🔧",
+                    value="utils"
+                ),
+                SelectOption(
+                    label="Развлечения",
+                    description="Игровые и развлекательные команды",
+                    emoji="🎲",
+                    value="fun"
+                ),
+                SelectOption(
+                    label="Экономика",
+                    description="Команды для работы с валютами",
+                    emoji="💰",
+                    value="economy"
+                ),
+                SelectOption(
+                    label="Кланы",
+                    description="Система кланов",
+                    emoji="🏰",
+                    value="clans"
                 )
             ]
         )
@@ -116,57 +140,71 @@ class HelpView(discord.ui.View):
         self.add_item(self.select)
 
     async def select_callback(self, interaction: discord.Interaction):
-        if self.select.values[0] == "mod":
-            embed = discord.Embed(title="🛡️ Модерация", color=discord.Color.red())
-            embed.description = """
-            🔇 `!мут <@пользователь> <время> <причина>` - Замутить пользователя
-            🔊 `!размут <@пользователь>` - Размутить пользователя
-            🔨 `!бан <@пользователь> <причина>` - Забанить пользователя
-            👢 `!кик <@пользователь> <причина>` - Кикнуть пользователя
-            🧹 `!очистить <количество>` - Удалить сообщения
-            ⚠️ `!варн <@пользователь> <причина>` - Выдать предупреждение
-            🔰  `!мод <@пользователь> <причина>` - Дать наказание по пункту правила
-            """
-            
-        elif self.select.values[0] == "ticket":
-            embed = discord.Embed(title="🎫 Система тикетов", color=discord.Color.green())
-            embed.description = """
-            📩 Используйте кнопку "Создать тикет" в специальном канале
-            ❓ При создании тикета укажите тему и описание проблемы
-            🔒 Для закрытия тикета используйте кнопку "Закрыть тикет"
-            """
-            
-        elif self.select.values[0] == "stats":
-            embed = discord.Embed(title="📊 Статистика", color=discord.Color.blue())
-            embed.description = """
-            📈 `!статистика [@пользователь]` - Показать статистику модератора
-            📊 `!ботинфо` - Показать общую статистику бота
-            """
-            
-        elif self.select.values[0] == "verify":
-            embed = discord.Embed(title="✅ Верификация", color=discord.Color.green())
-            embed.description = """
-            🤖 Верификация происходит автоматически при входе на сервер
-            🖼️ Вам будет предложено ввести код с капчи
-            🔓 После успешной верификации вы получите доступ к серверу
-            """
-            
-        elif self.select.values[0] == "docs":
-            embed = discord.Embed(title="📋 Система документов", color=discord.Color.gold())
-            embed.description = """
-            📝 Используйте кнопку "Подать документ" в специальном канале
-            👤 Укажите нарушителя и пункт правил
-            🖼️ Приложите доказательства (изображение)
-            👮 Доступно только для модераторов (роль "одмен")
-            """
-            
-        elif self.select.values[0] == "automod":
-            embed = discord.Embed(title="🤖 Автомодерация", color=discord.Color.orange())
-            embed.description = """
-            🛑 Автоматическая защита от спама
-            🖼️ Проверка изображений (расширения .jpg, .png, .gif)
-            ⏱️ Временные ограничения на отправку сообщений при спаме
-            """
+        category = self.select.values[0]
+
+        help_categories = {
+            "mod": {
+                "title": "🛡️ Модерация",
+                "description": """
+                Команды для управления сервером:
+                🔇 `!мут <@user> <время> <причина>` - Замутить пользователя
+                🔊 `!размут <@user>` - Размутить пользователя
+                🔨 `!бан <@user> <причина>` - Забанить пользователя
+                👢 `!кик <@user> <причина>` - Кикнуть пользователя
+                🧹 `!очистить <количество>` - Удалить сообщения
+                ⚠️ `!варн <@user> <rule>` - Выдать предупреждение
+                🔰 `!мод <@user> <rule>` - Наказание по правилу
+                """
+            },
+            "ticket": {
+                "title": "🎫 Система тикетов",
+                "description": """
+                Управление тикетами:
+                📩 `!тикет создать` - Создать новый тикет
+                🔒 `!тикет закрыть` - Закрыть текущий тикет
+                📋 `!тикеты список` - Список активных тикетов
+                """
+            },
+            "stats": {
+                "title": "📊 Статистика",
+                "description": """
+                Команды для просмотра статистики:
+                📈 `!статистика [@user]` - Статистика модератора
+                🤖 `!стат` - Статистика бота
+                📋 `!рейтинг` - Рейтинг активности
+                """
+            },
+            "utils": {
+                "title": "🔧 Утилиты",
+                "description": """
+                Полезные команды:
+                🌦️ `!погода <город>` - Прогноз погоды
+                💱 `!курсы_валют` - Курсы валют
+                💰 `!convert <сумма> <валюта1> <валюта2>` - Конвертация валют
+                """
+            },
+            "clans": {
+                "title": "🏰 Кланы",
+                "description": """
+                Система кланов:
+                🆕 `!клан создать` - Создать клан
+                📋 `!клан список` - Список кланов
+                ℹ️ `!клан инфо` - Информация о клане
+                ⚔️ `!клан битва` - Битва кланов
+                """
+            }
+        }
+
+        category_info = help_categories.get(category, {
+            "title": "❓ Неизвестная категория",
+            "description": "Извините, информация недоступна."
+        })
+
+        embed = discord.Embed(
+            title=category_info["title"],
+            description=category_info["description"],
+            color=discord.Color.blue()
+        )
 
         await interaction.response.edit_message(embed=embed)
 
@@ -184,63 +222,174 @@ async def help_command(ctx):
 
 # Команда мут
 @bot.command(name="мут")
-async def mute(ctx, member: discord.Member, rule_id: str):
+async def mute(ctx, *args):
+    # Проверка прав
     if not is_mod(ctx):
-        await ctx.send("У вас нет прав для выполнения этой команды.")
-        return
-    
-    # Получаем правило и проверяем, существует ли оно
-    rule = rules['rules'].get(rule_id)
-    if rule is None:
-        await ctx.send(f"Правило с идентификатором '{rule_id}' не найдено.")
+        await ctx.message.add_reaction("🚫")
+        embed = discord.Embed(
+            title="Ошибка доступа",
+            description="У вас недостаточно прав для выполнения этой команды.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    punishment_type = rule['punishment']['type']
-    duration = rule['punishment'].get('duration', 0)
+    # Проверка количества аргументов
+    if len(args) < 3:
+        await ctx.message.add_reaction("❓")
+        embed = discord.Embed(
+            title="Справка по команде мут",
+            description="**Использование:** `!мут @пользователь <время> <причина>`\n\n"
+                        "**Примеры:**\n"
+                        "`!мут @User 30м Спам в чате`\n"
+                        "`!мут @User 2ч Оскорбления`\n"
+                        "`!мут @User 1д Систематическое нарушение правил`\n\n"
+                        "**Форматы времени:**\n"
+                        "• `м` - минуты\n"
+                        "• `ч` - часы\n"
+                        "• `д` - дни\n\n"
+                        "**Ограничения:**\n"
+                        "• Максимальный мут: 28 дней\n"
+                        "• Минимальный мут: 1 минута",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
+        return
 
-    if punishment_type == 'timeout':
-        mute_role = discord.utils.get(ctx.guild.roles, name="психопатыч")
-        if mute_role is None:
-            await ctx.send("Роль 'Muted' не найдена. Пожалуйста, создайте её.")
+    # Поиск упоминания пользователя
+    member = None
+    for mention in ctx.message.mentions:
+        member = mention
+        break
+
+    if member is None:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Пользователь не найден. Используйте корректное упоминание (@Имя).",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Проверка на самомут или мут бота
+    if member == ctx.author:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Вы не можете замутить себя!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    if member.bot:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Нельзя замутить бота!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Парсинг времени
+    time_str = args[1].lower()
+    try:
+        if time_str.endswith('м'):
+            duration = int(time_str[:-1])
+            timeout_duration = timedelta(minutes=duration)
+        elif time_str.endswith('ч'):
+            duration = int(time_str[:-1])
+            timeout_duration = timedelta(hours=duration)
+        elif time_str.endswith('д'):
+            duration = int(time_str[:-1])
+            timeout_duration = timedelta(days=duration)
+        else:
+            raise ValueError("Неверный формат времени")
+
+        # Проверка диапазона времени
+        if duration < 1:
+            await ctx.message.add_reaction("❌")
+            embed = discord.Embed(
+                title="Ошибка",
+                description="Время мута должно быть больше 1 минуты.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
             return
 
-        await member.add_roles(mute_role)
-        end_time = datetime.now() + timedelta(minutes=duration)
+        if timeout_duration > timedelta(days=28):
+            await ctx.message.add_reaction("❌")
+            embed = discord.Embed(
+                title="Ошибка",
+                description="Максимальная длительность мута - 28 дней.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
 
-        # Сохраняем информацию о муте
-        mute_data[str(member.id)] = end_time.isoformat()
-        save_mute_data(mute_data)
+    except ValueError:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Неверный формат времени. Используйте:\n"
+                        "• `30м` для минут\n"
+                        "• `2ч` для часов\n"
+                        "• `1д` для дней",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
 
-        await ctx.send(f"{member.mention} был замучен на {duration} минут за нарушение правила '{rule_id}'. Причина: {rule['description']}")
+    # Собираем причину
+    reason = " ".join(args[2:])
 
-        # Автоматическое снятие мута
-        await asyncio.sleep(duration * 60)
-        await member.remove_roles(mute_role)
-        await ctx.send(f"{member.mention} больше не замучен.")
-        mute_data.pop(str(member.id), None)  # Удаляем из JSON после размута
-        save_mute_data(mute_data)
-    else:
-        await ctx.send(f"Правило '{rule_id}' не предусматривает мут.")
+    # Проверка длины причины
+    if len(reason) > 500:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Причина слишком длинная. Максимум 500 символов.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
 
-# Команда мутвремя
-@bot.command(name="мутвремя")
-async def mute_time(ctx, member: discord.Member):
-    mute_role = discord.utils.get(ctx.guild.roles, name="психопатыч")
-    if mute_role in member.roles:
-        end_time_str = mute_data.get(str(member.id))
-        if end_time_str:
-            end_time = datetime.fromisoformat(end_time_str)
-            time_left = end_time - datetime.now()
-            if time_left.total_seconds() > 0:
-                hours, remainder = divmod(time_left.seconds, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                await ctx.send(f"У {member.mention} осталось {hours} часов, {minutes} минут и {seconds} секунд до окончания мута.")
-            else:
-                await ctx.send(f"У {member.mention} мут должен был закончиться, но он все еще замучен.")
-        else:
-            await ctx.send(f"Информация о времени мута для {member.mention} не найдена.")
-    else:
-        await ctx.send(f"Участник {member.mention} не замучен.")
+    try:
+        # Таймаут
+        await member.timeout(timeout_duration, reason=reason)
+        await ctx.message.add_reaction("✅")
+
+        # Эмбед
+        embed = discord.Embed(
+            title="Мут участника",
+            description=f"{member.mention} был лишен возможности общаться.",
+            color=discord.Color.orange()
+        )
+        embed.add_field(name="Причина", value=reason, inline=False)
+        embed.add_field(name="Длительность", value=f"{time_str}", inline=False)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Выдал: {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        await ctx.send(embed=embed)
+
+    except discord.Forbidden:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Не удалось выдать тайм-аут. Возможно, у бота недостаточно прав или роль участника выше.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Неизвестная ошибка",
+            description=f"Произошла ошибка: {str(e)}",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 # Проверяем муты при запуске
 @bot.event
@@ -265,37 +414,130 @@ async def on_ready():
 
 # Команда бан
 @bot.command(name="бан")
-async def ban(ctx, member: discord.Member, rule_id: str):
+async def ban(ctx, *args):
+    # Проверка прав
     if not is_admin(ctx):
-        await ctx.message.add_reaction("❌")
-        await ctx.send("У вас нет прав для выполнения этой команды.")
+        await ctx.message.add_reaction("🚫")
+        embed = discord.Embed(
+            title="Ошибка доступа",
+            description="У вас недостаточно прав для выполнения этой команды.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    # Получаем правило и проверяем, существует ли оно
-    rule = rules['rules'].get(rule_id)
-    if rule is None:
-        await ctx.message.add_reaction("❌")
-        await ctx.send(f"Правило с идентификатором '{rule_id}' не найдено.")
+    # Проверка количества аргументов
+    if len(args) < 2:
+        await ctx.message.add_reaction("❓")
+        embed = discord.Embed(
+            title="Справка по команде бан",
+            description="**Использование:** `!бан @пользователь <причина>`\n\n"
+                        "**Пример:**\n"
+                        "`!бан @User Серьезное нарушение правил`\n\n"
+                        "**Требования:**\n"
+                        "• Обязательно упоминание пользователя\n"
+                        "• Указание причины бана",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
         return
 
-    # Применяем наказание в соответствии с правилом
-    punishment_type = rule['punishment']['type']
-    if punishment_type == 'ban':
-        duration = rule['punishment'].get('duration', 0)
-        await member.ban(reason=f"Нарушение правила '{rule_id}'")
-        if duration == 0:
-            await ctx.send(f"{member.mention} был забанен на неопределенный срок за нарушение правила '{rule_id}'. Причина: {rule['description']}")
-        else:
-            await ctx.send(f"{member.mention} был забанен на {duration} дней за нарушение правила '{rule_id}'. Причина: {rule['description']}")
-            # Автоматическое разбанивание через указанное время
-            await discord.utils.sleep_until(datetime.now() + timedelta(days=duration))
-            await ctx.guild.unban(member)
-    else:
-        await ctx.message.add_reaction("❌")
-        await ctx.send(f"Правило с идентификатором '{rule_id}' не предусматривает бан.")
+    # Поиск упоминания пользователя
+    member = None
+    for mention in ctx.message.mentions:
+        member = mention
+        break
+
+    if member is None:
+        await ctx.message.add_reaction("🤷")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Пользователь не найден. Используйте корректное упоминание (@Имя).",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    await ctx.message.add_reaction("✅")
+    # Проверка на самобан или бан бота
+    if member == ctx.author:
+        await ctx.message.add_reaction("🙅")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Вы не можете забанить себя!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    if member.bot:
+        await ctx.message.add_reaction("🤖")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Нельзя забанить бота!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Собираем причину
+    reason = " ".join(args[1:])
+
+    # Проверка длины причины
+    if len(reason) > 500:
+        await ctx.message.add_reaction("📝")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Причина слишком длинная. Максимум 500 символов.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        # Бан пользователя
+        await member.ban(reason=reason)
+        await ctx.message.add_reaction("✅")
+
+        # Эмбед
+        embed = discord.Embed(
+            title="Бан участника",
+            description=f"{member.mention} был забанен.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Причина", value=reason, inline=False)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Забанил: {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        await ctx.send(embed=embed)
+
+        # Опциональное логирование
+        log_channel = ctx.guild.get_channel(LOG_CHANNEL_ID)  # Замените на ID вашего канала логов
+        if log_channel:
+            log_embed = discord.Embed(
+                title="Бан участника",
+                description=f"Пользователь {member.mention} был забанен.",
+                color=discord.Color.red()
+            )
+            log_embed.add_field(name="Модератор", value=ctx.author.mention, inline=False)
+            log_embed.add_field(name="Причина", value=reason, inline=False)
+            await log_channel.send(embed=log_embed)
+
+    except discord.Forbidden:
+        await ctx.message.add_reaction("🚫")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Не удалось забанить пользователя. Возможно, у бота недостаточно прав.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.message.add_reaction("🆘")
+        embed = discord.Embed(
+            title="Непредвиденная ошибка",
+            description=f"Произошла ошибка: {str(e)}",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 # Команда кик
 @bot.command(name="кик")
@@ -326,16 +568,120 @@ async def kick(ctx, member: discord.Member, rule_id: str):
 
 # Команда размут
 @bot.command(name="размут")
-async def unmute(ctx, member: discord.Member):
+async def unmute(ctx, *args):
+    # Проверка прав
     if not is_mod(ctx):
         await ctx.message.add_reaction("❌")
-        await ctx.send("У вас нет прав для выполнения этой команды.")
+        embed = discord.Embed(
+            title="Ошибка доступа",
+            description="У вас недостаточно прав для выполнения этой команды.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    mute_role = discord.utils.get(ctx.guild.roles, name="психопатыч")
-    await member.remove_roles(mute_role)
-    await ctx.send(f"{member.mention} был размучен.")
-    await ctx.message.add_reaction("✅")
+    # Проверка количества аргументов
+    if len(args) < 1:
+        embed = discord.Embed(
+            title="Справка по команде размут",
+            description="**Использование:** `!размут @пользователь`\n\n"
+                        "**Примеры:**\n"
+                        "`!размут @User`\n\n"
+                        "**Форматы:**\n"
+                        "• Обязательно упоминание пользователя\n"
+                        "• Пользователь должен быть в муте",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Поиск упоминания пользователя
+    member = None
+    for mention in ctx.message.mentions:
+        member = mention
+        break
+
+    if member is None:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Пользователь не найден. Используйте корректное упоминание (@Имя).",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Проверка, есть ли у пользователя тайм-аут
+    if member.timed_out is False:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Информация",
+            description=f"{member.mention} не находится в муте.",
+            color=discord.Color.orange()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        # Снятие тайм-аута
+        await member.edit(timeout=None)
+        await ctx.message.add_reaction("✅")
+
+        # Эмбед
+        embed = discord.Embed(
+            title="Размут участника",
+            description=f"{member.mention} был возвращен к общению.",
+            color=discord.Color.green()
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Размутил: {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        await ctx.send(embed=embed)
+
+    except discord.Forbidden:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Не удалось снять мут. Возможно, у бота недостаточно прав.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Непредвиденная ошибка",
+            description=f"Произошла ошибка: {str(e)}",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+
+        # Эмбед
+        embed = discord.Embed(
+            title="Размут участника",
+            description=f"{member.mention} был возвращен к общению.",
+            color=discord.Color.green()
+        )
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Размутил: {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        await ctx.send(embed=embed)
+
+    except discord.Forbidden:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Не удалось снять мут. Возможно, у бота недостаточно прав.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.message.add_reaction("❌")
+        embed = discord.Embed(
+            title="Непредвиденная ошибка",
+            description=f"Произошла ошибка: {str(e)}",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
 @bot.command(name="разбан")
 async def unban(ctx, user: discord.User):
@@ -859,7 +1205,7 @@ async def on_message(message):
                 pass
 
 
-BOT_VERSION = 1.5
+BOT_VERSION = "REALESE 1.6; BUILD 012; 10.11.2024"
 
 start_time = time.time()
 
@@ -1327,6 +1673,730 @@ async def bot_info(ctx):
     await ctx.send(embed=embed)
 
 import platform
+
+import discord
+from discord.ext import commands
+import json
+import asyncio
+import random
+
+# Файл для хранения информации о кланах
+CLANS_FILE = 'clans.json'
+
+
+def load_clans():
+    try:
+        with open(CLANS_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def save_clans(clans):
+    with open(CLANS_FILE, 'w') as f:
+        json.dump(clans, f, indent=4)
+
+
+class ClansSystem:
+    def __init__(self, bot):
+        self.bot = bot
+        self.clans = load_clans()
+
+
+class ClansView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="Создать клан", style=discord.ButtonStyle.green, custom_id="create_clan")
+    async def create_clan(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Модальное окно для создания клана
+        class CreateClanModal(discord.ui.Modal, title="Создание клана"):
+            clan_name = discord.ui.TextInput(
+                label="Название клана",
+                placeholder="Введите уникальное название",
+                max_length=30
+            )
+            clan_description = discord.ui.TextInput(
+                label="Описание клана",
+                placeholder="Расскажите о вашем клане",
+                style=discord.TextStyle.paragraph,
+                max_length=200
+            )
+            clan_emoji = discord.ui.TextInput(
+                label="Эмоджи клана",
+                placeholder="Выберите эмоджи для клана",
+                max_length=2
+            )
+
+            async def on_submit(self, interaction: discord.Interaction):
+                clans = load_clans()
+
+                # Проверки
+                if self.clan_name.value in clans:
+                    await interaction.response.send_message(
+                        "Клан с таким названием уже существует!",
+                        ephemeral=True
+                    )
+                    return
+
+                # Создаем категорию для клана
+                guild = interaction.guild
+                clan_category = discord.utils.get(guild.categories, name="🏰 Кланы")
+                if not clan_category:
+                    clan_category = await guild.create_category("🏰 Кланы")
+
+                # Создаем канал клана
+                clan_channel = await guild.create_text_channel(
+                    f"{self.clan_name.value.lower()}-clan",
+                    category=clan_category
+                )
+
+                # Сохраняем информацию о клане
+                clans[self.clan_name.value] = {
+                    "owner": interaction.user.id,
+                    "description": self.clan_description.value,
+                    "emoji": self.clan_emoji.value,
+                    "members": [interaction.user.id],
+                    "level": 1,
+                    "exp": 0,
+                    "power": 100,
+                    "channel_id": clan_channel.id
+                }
+                save_clans(clans)
+
+                # Создаем embed о клане
+                embed = discord.Embed(
+                    title=f"{self.clan_emoji.value} Клан {self.clan_name.value}",
+                    description=self.clan_description.value,
+                    color=discord.Color.gold()
+                )
+                embed.add_field(name="Основатель", value=interaction.user.mention, inline=True)
+                embed.add_field(name="Уровень", value="1", inline=True)
+                embed.add_field(name="Сила клана", value="100", inline=True)
+
+                await clan_channel.send(embed=embed)
+
+                await interaction.response.send_message(
+                    f"Клан {self.clan_name.value} успешно создан!",
+                    ephemeral=True
+                )
+
+        await interaction.response.send_modal(CreateClanModal())
+
+    @discord.ui.button(label="Список кланов", style=discord.ButtonStyle.blurple, custom_id="list_clans")
+    async def list_clans(self, interaction: discord.Interaction, button: discord.ui.Button):
+        clans = load_clans()
+        if not clans:
+            await interaction.response.send_message("Пока нет созданных кланов.", ephemeral=True)
+            return
+
+        embeds = []
+        for name, data in clans.items():
+            embed = discord.Embed(
+                title=f"{data.get('emoji', '🏰')} {name}",
+                description=data.get('description', 'Без описания'),
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Уровень", value=data.get('level', 1), inline=True)
+            embed.add_field(name="Сила", value=data.get('power', 100), inline=True)
+            embed.add_field(name="Участников", value=len(data.get('members', [])), inline=True)
+            embeds.append(embed)
+
+        await interaction.response.send_message(embeds=embeds, ephemeral=True)
+
+    @discord.ui.button(label="Битва кланов", style=discord.ButtonStyle.red, custom_id="clan_battle")
+    async def clan_battle(self, interaction: discord.Interaction, button: discord.ui.Button):
+        clans = load_clans()
+        if len(clans) < 2:
+            await interaction.response.send_message("Недостаточно кланов для битвы.", ephemeral=True)
+            return
+
+        # Выбираем два случайных клана
+        clan_names = list(clans.keys())
+        clan1, clan2 = random.sample(clan_names, 2)
+
+        # Расчет результата битвы
+        power1 = clans[clan1]['power']
+        power2 = clans[clan2]['power']
+
+        winner = clan1 if power1 > power2 else clan2
+        loser = clan2 if winner == clan1 else clan1
+
+        # Создаем embed битвы
+        embed = discord.Embed(
+            title="🏆 Битва кланов",
+            description=f"**{clan1}** сразился с **{clan2}**!",
+            color=discord.Color.red()
+        )
+        embed.add_field(name=f"🥇 Победитель: {winner}", value=f"Сила: {clans[winner]['power']}", inline=False)
+        embed.add_field(name=f"🥈 Проигравший: {loser}", value=f"Сила: {clans[loser]['power']}", inline=False)
+
+        # Обновляем статистику
+        clans[winner]['exp'] += 50
+        clans[loser]['exp'] -= 20
+        clans[winner]['power'] += 10
+        clans[loser]['power'] -= 10
+
+        # Повышение уровня
+        if clans[winner]['exp'] >= 100:
+            clans[winner]['level'] += 1
+            clans[winner]['exp'] = 0
+
+        save_clans(clans)
+
+        await interaction.response.send_message(embed=embed)
+
+
+@bot.command(name="клан")
+async def clan_command(ctx, action: str = None, *args):
+    """Основная команда управления кланом"""
+
+    # Загружаем актуальные данные о кланах
+    clans = load_clans()
+
+    # Проверяем, в каком клане состоит пользователь
+    user_clan = None
+    for clan_name, clan_data in clans.items():
+        if ctx.author.id in clan_data.get('members', []):
+            user_clan = clan_name
+            break
+
+    # Если действие не указано - показываем справку
+    if not action:
+        embed = discord.Embed(
+            title="🏰 Система кланов",
+            description=(
+                "**Доступные команды:**\n"
+                "• `!клан создать` - Создать новый клан\n"
+                "• `!клан список` - Список всех кланов\n"
+                "• `!клан инфо` - Информация о вашем клане\n"
+                "• `!клан пригласить @user` - Пригласить участника\n"
+                "• `!клан покинуть` - Покинуть клан\n"
+                "• `!клан битва` - Начать битву кланов"
+            ),
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Обработка различных действий
+    if action.lower() == 'создать':
+        # Проверяем, не состоит ли уже в клане
+        if user_clan:
+            await ctx.send(f"Вы уже состоите в клане {user_clan}!")
+            return
+
+        # Запускаем процесс создания клана
+        await create_clan_process(ctx)
+
+    elif action.lower() == 'список':
+        # Показываем список кланов
+        async def show_clan_list(ctx):
+            """Показывает список всех кланов"""
+            clans = load_clans()
+
+            if not clans:
+                await ctx.send("Пока нет созданных кланов.")
+                return
+
+            # Создаем embed для списка кланов
+            embed = discord.Embed(
+                title="📋 Список кланов",
+                color=discord.Color.blue()
+            )
+
+            for name, data in clans.items():
+                embed.add_field(
+                    name=f"{data.get('emoji', '🏰')} {name}",
+                    value=(
+                        f"**Участников:** {len(data.get('members', []))}\n"
+                        f"**Уровень:** {data.get('level', 1)}\n"
+                        f"**Сила:** {data.get('power', 100)}"
+                    ),
+                    inline=False
+                )
+
+            await ctx.send(embed=embed)
+
+    elif action.lower() == 'инфо':
+        # Показываем информацию о клане пользователя
+        if not user_clan:
+            await ctx.send("Вы не состоите ни в одном клане.")
+            return
+
+        await show_clan_info(ctx, user_clan)
+
+    elif action.lower() == 'пригласить':
+        # Проверяем, есть ли клан у пользователя
+        if not user_clan:
+            await ctx.send("Вы должны быть участником клана, чтобы приглашать.")
+            return
+
+        # Проверяем, упомянут ли пользователь
+        if not ctx.message.mentions:
+            await ctx.send("Укажите пользователя, которого хотите пригласить.")
+            return
+
+        await invite_to_clan(ctx, user_clan, ctx.message.mentions[0])
+
+    elif action.lower() == 'покинуть':
+        # Проверяем, есть ли клан у пользователя
+        if not user_clan:
+            await ctx.send("Вы не состоите ни в одном клане.")
+            return
+
+        await leave_clan(ctx, user_clan)
+
+    elif action.lower() == 'битва':
+        # Проверяем, есть ли клан у пользователя
+        if not user_clan:
+            await ctx.send("Вы должны быть участником клана для битвы.")
+            return
+
+        await clan_battle(ctx, user_clan)
+
+
+async def create_clan_process(ctx):
+    """Процесс создания клана"""
+
+    # Здесь будет модальное окно для создания клана
+    def check(m):
+        return m.author == ctx.author and m.channel == ctx.channel
+
+    await ctx.send("Введите название клана:")
+    clan_name = await bot.wait_for('message', check=check)
+
+    await ctx.send("Введите описание клана:")
+    clan_description = await bot.wait_for('message', check=check)
+
+    await ctx.send("Выберите эмоджи для клана:")
+    clan_emoji = await bot.wait_for('message', check=check)
+
+    # Здесь будет логика сохранения клана
+    clans = load_clans()
+
+    # Проверка уникальности названия
+    if clan_name.content in clans:
+        await ctx.send("Клан с таким названием уже существует!")
+        return
+
+    # Создаем категорию для кланов
+    clan_category = discord.utils.get(ctx.guild.categories, name="🏰 Кланы")
+    if not clan_category:
+        clan_category = await ctx.guild.create_category("🏰 Кланы")
+
+    # Создаем канал клана
+    clan_channel = await ctx.guild.create_text_channel(
+        f"{clan_name.content.lower()}-clan",
+        category=clan_category
+    )
+
+    # Сохраняем информацию о клане
+    clans[clan_name.content] = {
+        "owner": ctx.author.id,
+        "description": clan_description.content,
+        "emoji": clan_emoji.content or "🏰",
+        "members": [ctx.author.id],
+        "level": 1,
+        "exp": 0,
+        "power": 100,
+        "channel_id": clan_channel.id
+    }
+
+    save_clans(clans)
+
+    # Создаем embed о клане
+    embed = discord.Embed(
+        title=f"{clans[clan_name.content]['emoji']} Клан {clan_name.content}",
+        description=clan_description.content,
+        color=discord.Color.gold()
+    )
+    embed.add_field(name="Основатель", value=ctx.author.mention, inline=True)
+    embed.add_field(name="Уровень", value="1", inline=True)
+    embed.add_field(name="Сила клана", value="100", inline=True)
+
+    await clan_channel.send(embed=embed)
+    await ctx.send(f"Клан {clan_name.content} успешно создан!")
+
+    if not clans:
+        await ctx.send("Пока нет созданных кланов.")
+        return
+
+    # Создаем embed для списка кланов
+    embed = discord.Embed(
+        title="📋 Список кланов",
+        color=discord.Color.blue()
+    )
+
+    for name, data in clans.items():
+        embed.add_field(
+            name=f"{data.get('emoji', '🏰')} {name}",
+            value=(
+                f"**Участников:** {len(data.get('members', []))}\n"
+                f"**Уровень:** {data.get('level', 1)}\n"
+                f"**Сила:** {data.get('power', 100)}"
+            ),
+            inline=False
+        )
+
+    await ctx.send(embed=embed)
+
+
+async def show_clan_info(ctx, clan_name):
+    """Показывает подробную информацию о клане"""
+    clans = load_clans()
+    clan_data = clans.get(clan_name)
+
+    if not clan_data:
+        await ctx.send("Клан не найден.")
+        return
+
+    # Получаем участников клана
+    members_mentions = []
+    for member_id in clan_data.get('members', []):
+        member = ctx.guild.get_member(member_id)
+        if member:
+            members_mentions.append(member.mention)
+
+    embed = discord.Embed(
+        title=f"{clan_data.get('emoji', '🏰')} {clan_name}",
+        description=clan_data.get('description', 'Без описания'),
+        color=discord.Color.gold()
+    )
+    embed.add_field(name="Основатель", value=f"<@{clan_data['owner']}>", inline=True)
+    embed.add_field(name="Уровень", value=clan_data.get('level', 1), inline=True)
+    embed.add_field(name="Сила клана", value=clan_data.get('power', 100), inline=True)
+    embed.add_field(name="Опыт", value=f"{clan_data.get('exp', 0)}/100", inline=True)
+    embed.add_field(name="Участники", value="\n".join(members_mentions), inline=False)
+
+    await ctx.send(embed=embed)
+
+
+async def invite_to_clan(ctx, clan_name, member):
+    """Приглашение участника в клан"""
+    clans = load_clans()
+    clan_data = clans.get(clan_name)
+
+    # Проверки
+    if member.id in clan_data.get('members', []):
+        await ctx.send(f"{member.mention} уже состоит в этом клане.")
+        return
+
+    # Проверка прав (только владелец или с особыми правами)
+    if ctx.author.id != clan_data['owner']:
+        await ctx.send("Приглашать в клан может только его основатель.")
+        return
+
+    # Отправляем приглашение
+    invite_embed = discord.Embed(
+        title="Приглашение в клан",
+        description=f"Вы приглашены в клан **{clan_name}**",
+        color=discord.Color.green()
+    )
+
+    # Создаем кнопки для ответа
+    class InviteView(discord.ui.View):
+        def __init__(self, clan_name, inviter, invited):
+            super().__init__()
+            self.clan_name = clan_name
+            self.inviter = inviter
+            self.invited = invited
+
+        @discord.ui.button(label="Принять", style=discord.ButtonStyle.green)
+        async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+            clans = load_clans()
+            clan_data = clans.get(self.clan_name)
+
+            clan_data['members'].append(self.invited.id)
+            save_clans(clans)
+
+            await interaction.response.send_message(f"Вы присоединились к клану **{self.clan_name}**!")
+
+            # Оповещаем в канале клана
+            clan_channel = interaction.guild.get_channel(clan_data['channel_id'])
+            await clan_channel.send(f"{self.invited.mention} присоединился к клану!")
+
+        @discord.ui.button(label="Отклонить", style=discord.ButtonStyle.red)
+        async def decline(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.send_message("Приглашение отклонено.")
+
+    await member.send(embed=invite_embed, view=InviteView(clan_name, ctx.author, member))
+    await ctx.send(f"Приглашение отправлено {member.mention}")
+
+
+async def leave_clan(ctx, clan_name):
+    """Покинуть клан"""
+    clans = load_clans()
+    clan_data = clans.get(clan_name)
+
+    # Удаляем участника
+    clan_data['members'].remove(ctx.author.id)
+
+    # Если участников не осталось - удаляем клан
+    if not clan_data['members']:
+        del clans[clan_name]
+        await ctx.send(f"Клан {clan_name} распущен из-за отсутствия участников.")
+    else:
+        # Если покинул владелец - назначаем нового
+        if ctx.author.id == clan_data['owner']:
+            clan_data['owner'] = clan_data['members'][0]
+            await ctx.send(f"Новый владелец клана: <@{clan_data['owner']}>")
+
+    save_clans(clans)
+    await ctx.send(f"Вы покинули клан {clan_name}")
+
+
+async def clan_battle(ctx, clan_name):
+    """Битва кланов"""
+    clans = load_clans()
+
+    # Выбираем случайный клан для битвы
+    enemy_clan = random.choice(list(clans.keys()))
+
+    while enemy_clan == clan_name:
+        enemy_clan = random.choice(list(clans.keys()))
+
+    # Расчет результатов битвы
+    clan_power = clans[clan_name]['power']
+    enemy_power = clans[enemy_clan]['power']
+
+    # Определяем победителя
+    winner = clan_name if clan_power > enemy_power else enemy_clan
+    loser = enemy_clan if winner == clan_name else clan_name
+
+    # Обновляем статистику
+    clans[winner]['exp'] += 50
+    clans[loser]['exp'] -= 20
+    clans[winner]['power'] += 10
+    clans[loser]['power'] -= 10
+
+    # Повышение уровня
+    if clans[winner]['exp'] >= 100:
+        clans[winner]['level'] += 1
+        clans[winner]['exp'] = 0
+
+    save_clans(clans)
+
+    # Создаем embed битвы
+    embed = discord.Embed(
+        title="⚔️ Битва кланов",
+        description=f"**{clan_name}** сразился с **{enemy_clan}**!",
+        color=discord.Color.red()
+    )
+    embed.add_field(name="Победитель", value=winner, inline=False)
+    embed.add_field(name="Проигравший", value=loser, inline=False)
+    embed.add_field(name="Изменение опыта", value=f"{winner}: +50\n{loser}: -20", inline=True)
+    embed.add_field(name="Изменение силы", value=f"{winner}: +10\n{loser}: -10", inline=True)
+
+    # Отправляем результаты битвы
+    await ctx.send(embed=embed)
+
+    # Оповещаем в каналах кланов
+    winner_channel_id = clans[winner]['channel_id']
+    loser_channel_id = clans[loser]['channel_id']
+
+    winner_channel = ctx.guild.get_channel(winner_channel_id)
+    loser_channel = ctx.guild.get_channel(loser_channel_id)
+
+    if winner_channel:
+        await winner_channel.send(f"🏆 Клан одержал победу в битве против клана {loser}!")
+
+    if loser_channel:
+        await loser_channel.send(f"😔 Клан потерпел поражение в битве против клана {winner}.")
+
+
+import requests
+import discord
+from discord.ext import commands
+
+WEATHER_API_KEY = "c7f9c89e8c344e219b6133731240911"
+
+@bot.command(name="погода")
+async def weather(ctx, *, city):
+    """Команда для получения погоды"""
+    base_url = "http://api.weatherapi.com/v1/current.json"
+
+    params = {
+        'key': WEATHER_API_KEY,
+        'q': city,
+        'lang': 'ru'
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        data = response.json()
+
+        # Извлечение данных
+        location = data['location']
+        current = data['current']
+
+        # Выбор иконки в зависимости от погоды
+        weather_condition = current['condition']['text'].lower()
+        weather_icons = {
+            'солнечно': '☀️',
+            'облачно': '☁️',
+            'дождь': '🌧️',
+            'снег': '❄️',
+            'гроза': '🌩️',
+            'морось': '🌦️'
+        }
+
+        # Подбор иконки
+        icon = next((icon for condition, icon in weather_icons.items() if condition in weather_condition), '🌈')
+
+        # Создание красивого embed
+        embed = discord.Embed(
+            title=f"{icon} Погода в {location['name']}, {location['country']}",
+            color=discord.Color.blue()
+        )
+
+        # Добавление полей
+        embed.add_field(
+            name="🌡️ Температура",
+            value=f"{current['temp_c']}°C (ощущается как {current['feelslike_c']}°C)",
+            inline=False
+        )
+
+        embed.add_field(
+            name="☁️ Состояние",
+            value=current['condition']['text'],
+            inline=False
+        )
+
+        embed.add_field(
+            name="💧 Влажность",
+            value=f"{current['humidity']}%",
+            inline=True
+        )
+
+        embed.add_field(
+            name="💨 Ветер",
+            value=f"{current['wind_kph']} км/ч, {current['wind_dir']}",
+            inline=True
+        )
+
+        # Добавляем изображение погоды
+        embed.set_thumbnail(url=f"https:{current['condition']['icon']}")
+
+        await ctx.send(embed=embed)
+
+    except requests.RequestException:
+        await ctx.send("Ошибка подключения к сервису погоды.")
+    except KeyError as e:
+        await ctx.send(f"Не удалось обработать данные о погоде. Ошибка: {e}")
+    except Exception as e:
+        await ctx.send(f"Произошла неизвестная ошибка: {e}")
+
+EXCHANGERATE_API_KEY = '882aea59171eeea2eff38ac4'
+
+import datetime
+
+
+@bot.command(name="курсы_валют")
+async def currency(ctx, base_currency='USD'):
+    """Команда для получения курсов валют"""
+    base_currency = base_currency.upper()
+
+    try:
+        # URL API для получения курсов
+        url = f'https://v6.exchangerate-api.com/v6/{EXCHANGERATE_API_KEY}/latest/{base_currency}'
+
+        response = requests.get(url)
+        data = response.json()
+
+        # Проверка успешности запроса
+        if data['result'] == 'success':
+            # Выбираем несколько популярных валют
+            interesting_currencies = {
+                'RUB': 'Российский рубль',
+                'EUR': 'Евро',
+                'USD': 'Доллар США',
+                'GBP': 'Британский фунт',
+                'CNY': 'Китайский юань',
+                'JPY': 'Японская иена'
+            }
+
+            # Создаем embed
+            embed = discord.Embed(
+                title=f"💱 Курсы валют для {base_currency}",
+                description=f"Актуальный курс на {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}",
+                color=discord.Color.green()
+            )
+
+            # Добавляем курсы выбранных валют
+            for code, name in interesting_currencies.items():
+                if code != base_currency and code in data['conversion_rates']:
+                    rate = data['conversion_rates'][code]
+                    embed.add_field(
+                        name=f"{code} - {name}",
+                        value=f"1 {base_currency} = {rate:.2f} {code}",
+                        inline=False
+                    )
+
+            # Добавляем иконку
+            embed.set_thumbnail(url="https://i.imgur.com/X7SkUU5.png")
+
+            await ctx.send(embed=embed)
+
+        else:
+            await ctx.send(f"Ошибка получения курсов: {data.get('error-type', 'Неизвестная ошибка')}")
+
+    except requests.RequestException:
+        await ctx.send("Ошибка подключения к сервису курсов валют.")
+    except KeyError as e:
+        await ctx.send(f"Не удалось обработать данные о курсах. Ошибка: {e}")
+    except Exception as e:
+        await ctx.send(f"Произошла неизвестная ошибка: {e}")
+
+
+@bot.command()
+async def convert(ctx, amount: float, from_currency: str, to_currency: str):
+    """Команда для конвертации валют"""
+    from_currency = from_currency.upper()
+    to_currency = to_currency.upper()
+
+    try:
+        # URL API для конвертации
+        url = f'https://v6.exchangerate-api.com/v6/{EXCHANGERATE_API_KEY}/pair/{from_currency}/{to_currency}/{amount}'
+
+        response = requests.get(url)
+        data = response.json()
+
+        # Проверка успешности запроса
+        if data['result'] == 'success':
+            converted_amount = data['conversion_result']
+
+            # Создаем embed
+            embed = discord.Embed(
+                title="💱 Конвертация валют",
+                color=discord.Color.blue()
+            )
+
+            embed.add_field(
+                name="Конвертация",
+                value=f"{amount} {from_currency} = {converted_amount:.2f} {to_currency}",
+                inline=False
+            )
+
+            embed.set_footer(text=f"Курс: 1 {from_currency} = {data['conversion_rate']:.4f} {to_currency}")
+
+            await ctx.send(embed=embed)
+
+        else:
+            await ctx.send(f"Ошибка конвертации: {data.get('error-type', 'Неизвестная ошибка')}")
+
+    except requests.RequestException:
+        await ctx.send("Ошибка подключения к сервису курсов валют.")
+    except Exception as e:
+        await ctx.send(f"Произошла ошибка: {e}")
+
+
+
+
+@bot.event
+async def on_ready():
+    print(f'Бот подключен: {bot.user.name}')
+
 
 
 # Запуск бота
