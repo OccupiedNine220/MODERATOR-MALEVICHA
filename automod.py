@@ -4,12 +4,12 @@ from discord.ext import commands
 import json
 from datetime import datetime, timedelta
 import asyncio
-from discord.ui import Button, View, Modal, TextInput
+from discord.ui import Modal, TextInput, Button, View
 import discord.ui
 from discord import app_commands
 import psutil
 import time
-from datetime import datetime 
+from datetime import datetime
 from discord import SelectOption, Embed
 from discord import ui 
 
@@ -62,10 +62,12 @@ mute_data = load_mute_data()
 # Проверка сообщений на банворды первой очереди
 @bot.event
 async def on_message(message):
+
     if message.author == bot.user:
         return
 
     await bot.process_commands(message)
+    await check_invites_and_links(message)
 
 
 class HelpView(discord.ui.View):
@@ -541,31 +543,132 @@ async def ban(ctx, *args):
         await ctx.send(embed=embed)
 
 # Команда кик
+# Команда кик
 @bot.command(name="кик")
-async def kick(ctx, member: discord.Member, rule_id: str):
-    if not is_mod(ctx):
-        await ctx.message.add_reaction("❌")
-        await ctx.send("У вас нет прав для выполнения этой команды.")
+async def kick(ctx, *args):
+    # Проверка прав
+    if not is_admin(ctx):
+        await ctx.message.add_reaction("🚫")
+        embed = discord.Embed(
+            title="Ошибка доступа",
+            description="У вас недостаточно прав для выполнения этой команды.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    # Получаем правило и проверяем, существует ли оно
-    rule = rules['rules'].get(rule_id)
-    if rule is None:
-        await ctx.message.add_reaction("❌")
-        await ctx.send(f"Правило с идентификатором '{rule_id}' не найдено.")
+    # Проверка количества аргументов
+    if len(args) < 2:
+        await ctx.message.add_reaction("❓")
+        embed = discord.Embed(
+            title="Справка по команде кик",
+            description="**Использование:** `!кик @пользователь <причина>`\n\n"
+                        "**Пример:**\n"
+                        "`!кик @User  Серьезное нарушение правил`\n\n"
+                        "**Требования:**\n"
+                        "• Обязательно упоминание пользователя\n"
+                        "• Указание причины кика",
+            color=discord.Color.blue()
+        )
+        await ctx.send(embed=embed)
         return
 
-    # Применяем наказание в соответствии с правилом
-    punishment_type = rule['punishment']['type']
-    if punishment_type == 'kick':
-        await member.kick(reason=f"Нарушение правила '{rule_id}'")
-        await ctx.send(f"{member.mention} был кикнут за нарушение правила '{rule_id}'. Причина: {rule['description']}")
-    else:
-        await ctx.message.add_reaction("❌")
-        await ctx.send(f"Правило с идентификатором '{rule_id}' не предусматривает кик.")
+    # Поиск упоминания пользователя
+    member = None
+    for mention in ctx.message.mentions:
+        member = mention
+        break
+
+    if member is None:
+        await ctx.message.add_reaction("🤷")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Пользователь не найден. Используйте корректное упоминание (@Имя).",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
         return
 
-    await ctx.message.add_reaction("✅")
+    # Проверка на самокик или кик бота
+    if member == ctx.author:
+        await ctx.message.add_reaction("🙅")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Вы не можете кикнуть себя!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    if member.bot:
+        await ctx.message.add_reaction("🤖")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Нельзя кикнуть бота!",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    # Собираем причину
+    reason = " ".join(args[1:])
+
+    # Проверка длины причины
+    if len(reason) > 500:
+        await ctx.message.add_reaction("📝")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Причина слишком длинная. Максимум 500 символов.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+        return
+
+    try:
+        # Кик пользователя
+        await member.kick(reason=reason)
+        await ctx.message.add_reaction("✅")
+
+        # Эмбед
+        embed = discord.Embed(
+            title="Кик участника",
+            description=f"{member.mention} был кикнут.",
+            color=discord.Color.red()
+        )
+        embed.add_field(name="Причина", value=reason, inline=False)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.set_footer(text=f"Кикнул: {ctx.author.name}", icon_url=ctx.author.display_avatar.url)
+
+        await ctx.send(embed=embed)
+
+        # Опциональное логирование
+        log_channel = ctx.guild.get_channel(LOG_CHANNEL_ID)  # Замените на ID вашего канала логов
+        if log_channel:
+            log_embed = discord.Embed(
+                title="Кик участника",
+                description=f"Пользователь {member.mention} был кикнут.",
+                color=discord.Color.red()
+            )
+            log_embed.add_field(name="Модератор", value=ctx.author.mention, inline=False)
+            log_embed.add_field(name="Причина", value=reason, inline=False)
+            await log_channel.send(embed=log_embed)
+
+    except discord.Forbidden:
+        await ctx.message.add_reaction("🚫")
+        embed = discord.Embed(
+            title="Ошибка",
+            description="Не удалось кикнуть пользователя. Возможно, у бота недостаточно прав.",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.message.add_reaction("🆘")
+        embed = discord.Embed(
+            title="Непредвиденная ошибка",
+            description=f"Произошла ошибка: {str(e)}",
+            color=discord.Color.red()
+            )
+        await ctx.send(embed=embed)
 
 # Команда размут
 @bot.command(name="размут")
@@ -1124,78 +1227,6 @@ import random
 import string
 import io
 
-class CaptchaModal(Modal):
-    def __init__(self, correct_code):
-        super().__init__(title="Введите код с капчи")
-        self.correct_code = correct_code
-        self.captcha_input = TextInput(label="Код капчи", placeholder="Введите код здесь", max_length=6)
-        self.add_item(self.captcha_input)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        if self.captcha_input.value.upper() == self.correct_code:
-            verified_role = discord.utils.get(interaction.guild.roles, name="Verified")
-            if verified_role:
-                await interaction.user.add_roles(verified_role)
-                await interaction.response.send_message("Верификация успешна! Этот канал будет удален через 5 секунд.", ephemeral=True)
-                await asyncio.sleep(5)
-                await interaction.channel.delete()
-            else:
-                await interaction.response.send_message("Роль 'Verified' не найдена. Пожалуйста, создайте её.", ephemeral=True)
-        else:
-            await interaction.response.send_message("Неверный код! Попробуйте еще раз.", ephemeral=True)
-
-class CaptchaView(View):
-    def __init__(self, correct_code):
-        super().__init__(timeout=300)
-        self.correct_code = correct_code
-
-    @discord.ui.button(label="Ввести код", style=discord.ButtonStyle.primary)
-    async def enter_code(self, interaction: discord.Interaction, button: Button):
-        modal = CaptchaModal(self.correct_code)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Новая капча", style=discord.ButtonStyle.secondary)
-    async def regenerate(self, interaction: discord.Interaction, button: Button):
-        await send_captcha(interaction.channel, interaction.user)
-
-# Функция для генерации кода капчи
-def generate_captcha_code(length=6):
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
-
-# Функция для создания изображения капчи
-def create_captcha_image(code):
-    image = ImageCaptcha()
-    captcha_image = image.generate(code)
-    return discord.File(io.BytesIO(captcha_image.getvalue()), "captcha.png")
-
-# Функция для отправки капчи
-async def send_captcha(channel, member):
-    captcha_code = generate_captcha_code()
-    captcha_image = create_captcha_image(captcha_code)
-
-    view = CaptchaView(captcha_code)
-    await channel.send(
-        f"{member.mention}, для верификации, пожалуйста, нажмите кнопку 'Ввести код' и введите код с картинки:",
-        file=captcha_image,
-        view=view
-    )
-
-@bot.event
-async def on_member_join(member):
-    verification_category = discord.utils.get(member.guild.categories, name="Верификация")
-    if not verification_category:
-        verification_category = await member.guild.create_category("Верификация")
-
-    verification_channel = await member.guild.create_text_channel(
-        f'verify-{member.name}',
-        category=verification_category
-    )
-
-    await verification_channel.set_permissions(member.guild.default_role, read_messages=False)
-    await verification_channel.set_permissions(member, read_messages=True, send_messages=True)
-
-    await send_captcha(verification_channel, member)
-
 # Автомодерация изображений
 @bot.event
 async def on_message(message):
@@ -1207,7 +1238,7 @@ async def on_message(message):
                 pass
 
 
-BOT_VERSION = "REALESE 1.6"
+BOT_VERSION = "REALESE 1.7.0"
 
 start_time = time.time()
 
@@ -1624,7 +1655,7 @@ async def on_message(message):
     # Обработка других команд
     await bot.process_commands(message)
 
-BOT_BUILD = "013 21.12.2024"
+BOT_BUILD = "000 21.12.2024"
 
 @bot.command(name='ботинфо')
 async def bot_info(ctx):
@@ -2425,106 +2456,479 @@ async def magic_ball(ctx):
     answer = random.choice(answers)
     await ctx.send(answer)
 
+import discord
+from discord.ext import commands
+from discord.ui import Select, View
+
+class RiskProtectionSystem:
+    def __init__(self):
+        self.risk_points = {
+            "account_age": 0,
+            "join_frequency": 0,
+            "message_spam": 0,
+            "suspicious_nicknames": 0,
+            "invite_links": 0,
+            "mass_mentions": 0
+        }
+        self.risk_thresholds = {
+            "low": 10,
+            "medium": 20,
+            "high": 30,
+            "critical": 40
+        }
+
+    def check_account_age(self, member):
+        """Проверка возраста аккаунта"""
+        days_since_creation = (datetime.now() - member.created_at).days
+        if days_since_creation < 7:
+            self.risk_points["account_age"] += 5
+        elif days_since_creation < 30:
+            self.risk_points["account_age"] += 3
+
+    def check_join_frequency(self, guild):
+        """Проверка частоты входов в гильдию"""
+        recent_joins = [member for member in guild.members 
+                        if (datetime.now() - member.joined_at).minutes < 10]
+        if len(recent_joins) > 5:
+            self.risk_points["join_frequency"] += 7
+
+    def check_message_spam(self, messages):
+        """Проверка спама сообщениями"""
+        message_count = len(messages)
+        if message_count > 10 in 60:
+            self.risk_points["message_spam"] += 6
+
+    def check_suspicious_nicknames(self, member):
+        """Проверка подозрительных никнеймов"""
+        suspicious_patterns = [
+            "admin", "moder", "hack", "bot", 
+            "support", "system", "test"
+        ]
+        if any(pattern in member.display_name.lower() 
+               for pattern in suspicious_patterns):
+            self.risk_points["suspicious_nicknames"] += 4
+
+    def check_invite_links(self, message):
+        """Проверка приглашений в другие discord сервера"""
+        invite_patterns = ["discord.gg", "discordapp.com/invite"]
+        if any(pattern in message.content for pattern in invite_patterns):
+            self.risk_points["invite_links"] += 5
+
+    def check_mass_mentions(self, message):
+        """Проверка массовых упоминаний"""
+        if len(message.mentions) > 5:
+            self.risk_points["mass_mentions"] += 6
+
+    def get_risk_level(self):
+        """Определение уровня риска"""
+        total_risk = sum(self.risk_points.values())
+        
+        if total_risk >= self.risk_thresholds["critical"]:
+            return "CRITICAL"
+        elif total_risk >= self.risk_thresholds["high"]:
+            return "HIGH"
+        elif total_risk >= self.risk_thresholds["medium"]:
+            return "MEDIUM"
+        elif total_risk >= self.risk_thresholds["low"]:
+            return "LOW"
+        else:
+            return "SAFE"
+
+    def apply_protection(self, member, risk_level):
+        """Применение защитных мер"""
+        protection_actions = {
+            "CRITICAL": self.critical_protection,
+            "HIGH": self.high_protection,
+            "MEDIUM": self.medium_protection,
+            "LOW": self.low_protection,
+            "SAFE": lambda x: None
+        }
+        protection_actions[risk_level](member)
+
+    def low_protection(self, member):
+        """Легкая защита"""
+        role = discord.utils.get(member.guild.roles, name="Новичок")
+        member.add_roles(role)
+
+    def medium_protection(self, member):
+        """Средняя защита"""
+        member.timeout(timedelta(minutes=10))
+
+    def high_protection(self, member):
+        """Строгая защита"""
+        member.timeout(timedelta(hours=1))
+        # Отправка уведомления администратору
+
+    def critical_protection(self, member):
+        """Максимальная защита"""
+        member.ban(reason="Критический уровень риска")
+
+class AutoModMenu(View):
+    def __init__(self, ctx):
+        super().__init__()
+        self.ctx = ctx
+
+    @discord.ui.select(
+        placeholder="Выберите функцию автомодерации",
+        options=[
+            discord.SelectOption(
+                label="Проверка возраста аккаунта", 
+                value="account_age"
+            ),
+            discord.SelectOption(
+                label="Частота входов", 
+                value="join_frequency"
+            ),
+            # Другие опции...
+        ]
+    )
+    async def select_callback(self, interaction: discord.Interaction, select: Select):
+        selected = select.values[0]
+        # Логика обработки выбранной функции
+        await interaction.response.send_message(f"Выбрана функция: {selected}")
+
+@bot.command(name="автомод")
+async def auto_mod_settings(ctx):
+    view = AutoModMenu(ctx)
+    await ctx.send("Настройки автомодерации:", view=view)
+
+class RiskPointsTracker:
+    def __init__(self):
+        self.user_risk_points = {}
+
+    def add_risk_points(self, user_id, points, reason):
+        """Добавление баллов риска пользователю"""
+        if user_id not in self.user_risk_points:
+            self.user_risk_points[user_id] = {
+                "total_points": 0,
+                "history": []
+            }
+        
+        self.user_risk_points[user_id]["total_points"] += points
+        self.user_risk_points[user_id]["history"].append({
+            "points": points,
+            "reason": reason,
+            "timestamp": datetime.now()
+        })
+
+    def get_user_risk_info(self, user_id):
+        """Получение информации о рисках пользователя"""
+        return self.user_risk_points.get(user_id, {
+            "total_points": 0,
+            "history": []
+        })
+
+class RiskPointsView(discord.ui.View):
+    def __init__(self, user_id, risk_info):
+        super().__init__()
+        self.user_id = user_id
+        self.risk_info = risk_info
+
+    @discord.ui.button(label="История баллов", style=discord.ButtonStyle.primary)
+    async def show_history(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Показать подробную историю баллов риска"""
+        embed = discord.Embed(
+            title=f"🚨 История баллов риска",
+            color=discord.Color.red()
+        )
+        
+        history = self.risk_info.get("history", [])
+        if not history:
+            embed.description = "История баллов пуста"
+        else:
+            for entry in history[-5:]:  # Последние 5 записей
+                embed.add_field(
+                    name=f"+ {entry['points']} баллов",
+                    value=f"Причина: {entry['reason']}\n"
+                          f"Время: {entry['timestamp'].strftime('%d.%m.%Y %H:%M')}",
+                    inline=False
+                )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.command(name="авторейд_балы")
+async def check_risk_points(ctx):
+    """Команда для просмотра собственных баллов риска"""
+    # Создаем или получаем трекер баллов риска
+    if not hasattr(bot, 'risk_points_tracker'):
+        bot.risk_points_tracker = RiskPointsTracker()
+    
+    # Получаем информацию о баллах риска текущего пользователя
+    user_id = ctx.author.id
+    risk_info = bot.risk_points_tracker.get_user_risk_info(user_id)
+    
+    # Создаем embed с информацией о баллах
+    embed = discord.Embed(
+        title="🛡️ Ваши баллы риска",
+        color=discord.Color.from_rgb(255, 100, 0)
+    )
+    
+    # Определяем цвет и статус в зависимости от баллов
+    total_points = risk_info.get("total_points", 0)
+    
+    if total_points < 10:
+        status = "✅ Безопасный"
+        color = discord.Color.green()
+    elif total_points < 20:
+        status = "🟡 Низкий риск"
+        color = discord.Color.yellow()
+    elif total_points < 30:
+        status = "🟠 Средний риск"
+        color = discord.Color.orange()
+    else:
+        status = "🔴 Высокий риск"
+        color = discord.Color.red()
+    
+    embed.description = f"**Всего баллов риска:** {total_points}\n**Статус:** {status}"
+    
+    # Добавляем информативные поля
+    embed.add_field(
+        name="📊 Уровни риска",
+        value="0-10: Безопасно\n"
+              "10-20: Низкий риск\n"
+              "20-30: Средний риск\n"
+              "30+: Высокий риск",
+        inline=False
+    )
+    
+    # Создаем View с кнопкой истории
+    view = RiskPointsView(user_id, risk_info)
+    
+    # Отправляем сообщение
+    await ctx.send(embed=embed, view=view)
+
+# Пример добавления баллов риска
+def add_risk_points_example(user_id, points, reason):
+    """Пример добавления баллов риска"""
+    if not hasattr(bot, 'risk_points_tracker'):
+        bot.risk_points_tracker = RiskPointsTracker()
+    
+    bot.risk_points_tracker.add_risk_points(user_id, points, reason)
+
+# Примеры использования в различных событиях
+@bot.event
+async def on_message(message):
+    # Пример начисления баллов за спам
+    if len(message.mentions) > 5:
+        add_risk_points_example(
+            message.author.id, 
+            5, 
+            "Массовое упоминание пользователей"
+        )
+
 @bot.event
 async def on_member_join(member):
-    """
-    Система защиты от рейда при входе новых участников
-    """
-    # Получаем настройки канала для логирования
-    log_channel = member.guild.get_channel(LOG_CHANNEL_ID)
+    # Пример начисления баллов за подозрительный аккаунт
+    account_age = (datetime.now() - member.created_at).days
+    if account_age < 7:
+        add_risk_points_example(
+            member.id, 
+            3, 
+            "Новый аккаунт (< 7 дней)"
+        )
 
-    # Проверка аккаунта
-    account_age = datetime.now(member.created_at.tzinfo) - member.created_at
+CATEGORY_ID = 1319984453455712276  # Замените на ваш ID категории
+ROLE_CONFIRMED_ID = 1314170127456927774  # Замените на ID роли "Потвержден"
+ROLE_UNCONFIRMED_ID = 1319989158961479720  # Замените на ID роли "Непотвержден"
 
-    # Временная роль для новых участников
-    temp_role = discord.utils.get(member.guild.roles, name="Новый участник")
 
-    # Жесткие проверки
-    if account_age.days < 7:
-        # Подозрительно новый аккаунт
-        await member.add_roles(temp_role)
+    
+    
+
+import aiohttp
+import re
+
+class BotSecurityCheck:
+    def __init__(self, bot):
+        self.bot = bot
+        self.suspicious_bot_patterns = [
+            r"hack", r"spam", r"raid", r"flood", 
+            r"admin", r"cheat", r"exploit"
+        ]
+        self.whitelist_bots = [
+            # ID официальных ботов
+            123456789, 987654321
+        ]
+        self.bot_risk_checks = {
+            "name_check": self.check_bot_name,
+            "permissions_check": self.check_bot_permissions,
+            "external_links_check": self.check_external_links
+        }
+
+    async def comprehensive_bot_check(self, bot_member):
+        """Комплексная проверка бота"""
+        risk_score = 0
+        risk_reasons = []
+
+        # Проверка по каждому параметру
+        for check_name, check_func in self.bot_risk_checks.items():
+            check_result = await check_func(bot_member)
+            if check_result:
+                risk_score += check_result['score']
+                risk_reasons.append(check_result['reason'])
+
+        # Проверка репутации через внешние базы
+        reputation_check = await self.check_bot_reputation(bot_member)
+        if reputation_check:
+            risk_score += reputation_check['score']
+            risk_reasons.append(reputation_check['reason'])
+
+        return {
+            "risk_score": risk_score,
+            "risk_reasons": risk_reasons
+        }
+
+    def check_bot_name(self, bot_member):
+        """Проверка имени бота"""
+        bot_name = bot_member.name.lower()
         
-        if log_channel:
+        for pattern in self.suspicious_bot_patterns:
+            if re.search(pattern, bot_name):
+                return {
+                    "score": 5,
+                    "reason": f"Подозрительное имя бота: {bot_name}"
+                }
+        return None
+
+    def check_bot_permissions(self, bot_member):
+        """Проверка подозрительных прав бота"""
+        dangerous_permissions = [
+            "administrator",
+            "manage_guild", 
+            "manage_channels", 
+            "manage_roles"
+        ]
+
+        bot_perms = bot_member.guild_permissions
+        suspicious_perms = [
+            perm for perm in dangerous_permissions 
+            if getattr(bot_perms, perm)
+        ]
+
+        if suspicious_perms:
+            return {
+                "score": 7,
+                "reason": f"Опасные права: {', '.join(suspicious_perms)}"
+            }
+        return None
+
+    def check_external_links(self, bot_member):
+        """Проверка внешних ссылок в описании"""
+        description = bot_member.activity.name if bot_member.activity else ""
+        
+        url_pattern = r'https?://\S+'
+        links = re.findall(url_pattern, description)
+        
+        if links:
+            return {
+                "score": 4,
+                "reason": f"Найдены внешние ссылки: {links}"
+            }
+        return None
+
+    async def check_bot_reputation(self, bot_member):
+        """Проверка репутации бота через внешние источники"""
+            async with aiohttp.ClientSession() as session:
+                # Пример проверки (замените на реальный API)
+                async with session.get(f"https://bot-reputation-api.com/check/{bot_member.id}") as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data.get('reputation', 0) < 50:
+                            return {
+                                "score": 6,
+                                "reason": "Низкий рейтинг репутации бота"
+                            }
+        except Exception:
+            pass
+        return None
+
+@bot.event
+async def on_guild_bot_add(member):
+    """Событие при добавлении бота на сервер"""
+    if member.bot and member.id not in bot_security_check.whitelist_bots:
+        bot_security = BotSecurityCheck(bot)
+        check_result = await bot_security.comprehensive_bot_check(member)
+
+        if check_result['risk_score'] > 10:
+            # Логирование и действия при высоком риске
+            log_channel = member.guild.system_channel
+            
             embed = discord.Embed(
-                title="⚠️ Подозрительный вход",
-                description=f"Обнаружен потенциально опасный пользователь: {member.mention}",
+                title="🚨 Обнаружен подозрительный бот",
                 color=discord.Color.red()
             )
-            embed.add_field(name="Возраст аккаунта", value=f"{account_age.days} дней", inline=False)
-            embed.add_field(name="ID", value=member.id, inline=False)
+            embed.add_field(
+                name="Бот", 
+                value=member.mention, 
+                inline=False
+            )
+            embed.add_field(
+                name="Причины риска", 
+                value="\n".join(check_result['risk_reasons']), 
+                inline=False
+            )
+            embed.add_field(
+                name="Риск-score", 
+                value=check_result['risk_score'], 
+                inline=False
+            )
+
             await log_channel.send(embed=embed)
+            
+            # Варианты действий
+            if check_result['risk_score'] > 15:
+                await member.kick(reason="Высокий риск безопасности")
+            else:
+                # Ограничение прав
+                await member.edit(roles=[])
 
-        # Дополнительные проверки
-        await check_suspicious_join(member)
+# Глобальный объект для проверок
+bot_security_check = BotSecurityCheck(bot)
 
-async def check_suspicious_join(member):
-    """
-    Расширенная проверка подозрительных входов
-    """
-    # Проверка на совпадение аватара
-    similar_avatars = 0
-    for guild_member in member.guild.members:
-        if guild_member.avatar == member.avatar:
-            similar_avatars += 1
-
-    # Проверка на похожие никнеймы
-    similar_names = 0
-    for guild_member in member.guild.members:
-        if difflib.SequenceMatcher(None, guild_member.name, member.name).ratio() > 0.8:
-            similar_names += 1
-
-    if similar_avatars > 3 or similar_names > 3:
-        # Потенциальный рейд
-        await handle_potential_raid(member)
-
-async def handle_potential_raid(member):
-    """
-    Обработка потенциального рейда
-    """
-    raid_role = discord.utils.get(member.guild.roles, name="Подозреваемый в рейде")
-    
-    if raid_role:
-        await member.add_roles(raid_role)
-    
-    log_channel = member.guild.get_channel(LOG_CHANNEL_ID)
-    
-    if log_channel:
-        embed = discord.Embed(
-            title="🚨 Обнаружен потенциальный рейд",
-            description=f"Пользователь {member.mention} помещен под подозрение",
-            color=discord.Color.dark_red()
-        )
-        embed.add_field(name="Действия", value="Временная изоляция", inline=False)
-        await log_channel.send(embed=embed)
-
-@bot.command(name="антирейд")
+# Команда для ручной проверки бота
+@bot.command(name="проверка_бота")
 @commands.has_permissions(administrator=True)
-async def anti_raid_settings(ctx, action: str = None):
-    """
-    Настройки антирейда для администраторов
-    """
-    if action == "включить":
-        # Логика включения расширенной защиты
-        await ctx.send("Расширенная защита от рейда включена")
-    
-    elif action == "выключить":
-        # Логика выключения расширенной защиты
-        await ctx.send("Расширенная защита от рейда выключена")
-    
-    else:
-        # Показ текущих настроек
-        embed = discord.Embed(
-            title="🛡️ Настройки Антирейда",
-            description="Защита от массового входа злоумышленников",
-            color=discord.Color.blue()
-        )
-        embed.add_field(name="Текущий статус", value="Активен", inline=False)
-        embed.add_field(name="Команды", value="""
-        • `!антирейд включить` - Включить защиту
-        • `!антирейд выключить` - Выключить защиту
-        """, inline=False)
-        await ctx.send(embed=embed)
+async def check_bot_manually(ctx, bot: discord.Member):
+    """Ручная проверка бота администратором"""
+    if not bot.bot:
+        await ctx.send("Это не бот!")
+        return
 
+    check_result = await bot_security_check.comprehensive_bot_check(bot)
+    
+    embed = discord.Embed(
+        title=f"🤖 Проверка бота {bot.name}",
+        color=discord.Color.orange()
+    )
+    embed.add_field(
+        name="Риск-score", 
+        value=check_result['risk_score'], 
+        inline=False
+    )
+    embed.add_field(
+        name="Причины риска", 
+        value="\n".join(check_result['risk_reasons']) 
+        if check_result['risk_reasons'] 
+        else "Риски не обнаружены", 
+        inline=False
+    )
+
+    await ctx.send(embed=embed)
+
+async def check_invites_and_links(message):
+    """Проверка на наличие приглашений и гиперссылок в сообщении."""
+    invite_pattern = r"(https?://(www\.)?discord\.gg/\S+|discord\.gg/\S+|discordapp\.com/invite/\S+)"
+    link_pattern = r"https?://\S+"
+
+    # Проверка на наличие приглашений
+    if re.search(invite_pattern, message.content):
+        await message.delete()  # Удаляем сообщение
+        await message.author.timeout(duration=datetime.timedelta(hours=1), reason="Приглашение на другой сервер")
+        await message.author.send(f"Ваше сообщение было удалено за использование приглашения к другому серверу. Вы получаете тайм-аут на 1 час.")
+
+    # Проверка на наличие гиперссылок
+    elif re.search(link_pattern, message.content):
+        await message.delete()  # Удаляем сообщение
+        await message.author.send(f"Ваше сообщение было удалено за использование гиперссылки.")
 
 # Запуск бота
-bot.run('ТОКЕН')
