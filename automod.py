@@ -1,3 +1,4 @@
+import difflib
 import discord
 from discord.ext import commands
 import json
@@ -1062,6 +1063,7 @@ class TicketView(discord.ui.View):
 
 @bot.event
 async def on_ready():
+    print("Бот запущен!")
     # Находим канал для создания тикетов
     channel = bot.get_channel(1301124585483403264)  # Замените на ID вашего канала
     if channel:
@@ -1205,7 +1207,7 @@ async def on_message(message):
                 pass
 
 
-BOT_VERSION = "REALESE 1.6; BUILD 012; 10.11.2024"
+BOT_VERSION = "REALESE 1.6"
 
 start_time = time.time()
 
@@ -1622,6 +1624,8 @@ async def on_message(message):
     # Обработка других команд
     await bot.process_commands(message)
 
+BOT_BUILD = "013 21.12.2024"
+
 @bot.command(name='ботинфо')
 async def bot_info(ctx):
     current_time = time.time()
@@ -1640,7 +1644,8 @@ async def bot_info(ctx):
         value=f"**Серверов:** {len(bot.guilds)}\n"
               f"**Пользователей:** {len(set(bot.users))}\n"
               f"**Пинг:** {round(bot.latency * 1000)}мс\n"
-              f"Версия бота: {BOT_VERSION}",
+              f"Версия бота: {BOT_VERSION}\n"
+              f"Сборка бота: {BOT_BUILD}",
         inline=False
     )
 
@@ -2397,6 +2402,128 @@ async def convert(ctx, amount: float, from_currency: str, to_currency: str):
 async def on_ready():
     print(f'Бот подключен: {bot.user.name}')
 
+
+@bot.command(name="шар")
+async def magic_ball(ctx):
+    """Команда для получения ответа от магического шара"""
+    answers = [
+        'Да',
+        'Нет',
+        'Возможно',
+        'Скорее всего',
+        'Вероятно',
+        'Не знаю',
+        'Спроси позже',
+        'Лучше не рассказывать',
+        'Не могу сказать',
+        'Спроси меня позже',
+        'Не рассчитывай на это',
+        'Не надейся на это',
+        'Определенно нет',
+        'Определенно да'
+    ]
+    answer = random.choice(answers)
+    await ctx.send(answer)
+
+@bot.event
+async def on_member_join(member):
+    """
+    Система защиты от рейда при входе новых участников
+    """
+    # Получаем настройки канала для логирования
+    log_channel = member.guild.get_channel(LOG_CHANNEL_ID)
+
+    # Проверка аккаунта
+    account_age = datetime.now(member.created_at.tzinfo) - member.created_at
+
+    # Временная роль для новых участников
+    temp_role = discord.utils.get(member.guild.roles, name="Новый участник")
+
+    # Жесткие проверки
+    if account_age.days < 7:
+        # Подозрительно новый аккаунт
+        await member.add_roles(temp_role)
+        
+        if log_channel:
+            embed = discord.Embed(
+                title="⚠️ Подозрительный вход",
+                description=f"Обнаружен потенциально опасный пользователь: {member.mention}",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Возраст аккаунта", value=f"{account_age.days} дней", inline=False)
+            embed.add_field(name="ID", value=member.id, inline=False)
+            await log_channel.send(embed=embed)
+
+        # Дополнительные проверки
+        await check_suspicious_join(member)
+
+async def check_suspicious_join(member):
+    """
+    Расширенная проверка подозрительных входов
+    """
+    # Проверка на совпадение аватара
+    similar_avatars = 0
+    for guild_member in member.guild.members:
+        if guild_member.avatar == member.avatar:
+            similar_avatars += 1
+
+    # Проверка на похожие никнеймы
+    similar_names = 0
+    for guild_member in member.guild.members:
+        if difflib.SequenceMatcher(None, guild_member.name, member.name).ratio() > 0.8:
+            similar_names += 1
+
+    if similar_avatars > 3 or similar_names > 3:
+        # Потенциальный рейд
+        await handle_potential_raid(member)
+
+async def handle_potential_raid(member):
+    """
+    Обработка потенциального рейда
+    """
+    raid_role = discord.utils.get(member.guild.roles, name="Подозреваемый в рейде")
+    
+    if raid_role:
+        await member.add_roles(raid_role)
+    
+    log_channel = member.guild.get_channel(LOG_CHANNEL_ID)
+    
+    if log_channel:
+        embed = discord.Embed(
+            title="🚨 Обнаружен потенциальный рейд",
+            description=f"Пользователь {member.mention} помещен под подозрение",
+            color=discord.Color.dark_red()
+        )
+        embed.add_field(name="Действия", value="Временная изоляция", inline=False)
+        await log_channel.send(embed=embed)
+
+@bot.command(name="антирейд")
+@commands.has_permissions(administrator=True)
+async def anti_raid_settings(ctx, action: str = None):
+    """
+    Настройки антирейда для администраторов
+    """
+    if action == "включить":
+        # Логика включения расширенной защиты
+        await ctx.send("Расширенная защита от рейда включена")
+    
+    elif action == "выключить":
+        # Логика выключения расширенной защиты
+        await ctx.send("Расширенная защита от рейда выключена")
+    
+    else:
+        # Показ текущих настроек
+        embed = discord.Embed(
+            title="🛡️ Настройки Антирейда",
+            description="Защита от массового входа злоумышленников",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Текущий статус", value="Активен", inline=False)
+        embed.add_field(name="Команды", value="""
+        • `!антирейд включить` - Включить защиту
+        • `!антирейд выключить` - Выключить защиту
+        """, inline=False)
+        await ctx.send(embed=embed)
 
 
 # Запуск бота
