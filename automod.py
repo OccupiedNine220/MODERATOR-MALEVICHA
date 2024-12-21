@@ -2527,4 +2527,4 @@ async def anti_raid_settings(ctx, action: str = None):
 
 
 # Запуск бота
-bot.run('MTI3MjAzMzQ5Njc0NzIxNjkyMA.GlqNbY.ab1W1VT2Yto_Lpoy7O8GvYHHdqSfzqZu1PTGAk')
+bot.run('ТОКЕН')
