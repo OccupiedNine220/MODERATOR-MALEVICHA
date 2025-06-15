@@ -2,7 +2,7 @@
 
 ![Discord Bot](https://img.shields.io/badge/discord-bot-7289DA?logo=discord&logoColor=white)
 ![Version](https://img.shields.io/badge/version-1.8.1-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-WTFPL-brightgreen)
 
 Advanced Discord moderation bot built with JavaScript that helps maintain server order, automate moderation tasks, and protect your community.
 
@@ -82,7 +82,7 @@ MODERATOR-MALEVICHA/
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE (WTFPL) - see the [LICENSE](LICENSE) file for details.
 
 ## 📞 Support
 
@@ -90,4 +90,4 @@ For support, please open an issue on GitHub or contact the project maintainers.
 
 ---
 
-Version: 1.8.1 | Build: 008 05.06.2025
+Version: 1.8.1 | Build: 008 idk
