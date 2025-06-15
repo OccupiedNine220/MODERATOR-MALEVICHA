@@ -1,0 +1,106 @@
+{
+  "groq": [
+    {
+      "timestamp": 1747336152788,
+      "isUp": false,
+      "responseTime": 3368
+    },
+    {
+      "timestamp": 1747336256484,
+      "isUp": false,
+      "responseTime": 203
+    },
+    {
+      "timestamp": 1747496254443,
+      "isUp": false,
+      "responseTime": 209
+    },
+    {
+      "timestamp": 1747496589881,
+      "isUp": false,
+      "responseTime": 220
+    },
+    {
+      "timestamp": 1747496664396,
+      "isUp": false,
+      "responseTime": 240
+    },
+    {
+      "timestamp": 1747496694183,
+      "isUp": false,
+      "responseTime": 3397
+    },
+    {
+      "timestamp": 1747496700800,
+      "isUp": false,
+      "responseTime": 207
+    },
+    {
+      "timestamp": 1748431746590,
+      "isUp": false,
+      "responseTime": 254
+    },
+    {
+      "timestamp": 1748981148161,
+      "isUp": false,
+      "responseTime": null
+    },
+    {
+      "timestamp": 1748981172930,
+      "isUp": false,
+      "responseTime": 207
+    }
+  ],
+  "bot": [
+    {
+      "timestamp": 1747336152974,
+      "isUp": true,
+      "responseTime": 186
+    },
+    {
+      "timestamp": 1747336256683,
+      "isUp": true,
+      "responseTime": 199
+    },
+    {
+      "timestamp": 1747496254647,
+      "isUp": true,
+      "responseTime": 204
+    },
+    {
+      "timestamp": 1747496590071,
+      "isUp": true,
+      "responseTime": 189
+    },
+    {
+      "timestamp": 1747496664581,
+      "isUp": true,
+      "responseTime": 185
+    },
+    {
+      "timestamp": 1747496694355,
+      "isUp": true,
+      "responseTime": 172
+    },
+    {
+      "timestamp": 1747496701018,
+      "isUp": true,
+      "responseTime": 217
+    },
+    {
+      "timestamp": 1748431746778,
+      "isUp": true,
+      "responseTime": 187
+    },
+    {
+      "timestamp": 1748981148366,
+      "isUp": true,
+      "responseTime": 204
+    },
+    {
+      "timestamp": 1748981173130,
+      "isUp": true,
+      "responseTime": 200
+    }
+  ]
+}
